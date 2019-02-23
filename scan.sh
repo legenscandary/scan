@@ -638,7 +638,7 @@ configSys() {
     echo "==> Configuring the system:"
     if ! userExists; then
         echo " => Creating user '$USER' ..."
-        sudo adduser --system --disabled-login --shell=/bin/false $USER
+        sudo adduser --system --ingroup scanner --disabled-login --shell=/bin/false $USER
         sudo -u $USER sh -c "cd; mkdir $OUT_SUBDIR"
     fi
     OUT_DIR="$(getOutdir)"
