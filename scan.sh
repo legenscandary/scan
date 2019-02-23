@@ -653,16 +653,20 @@ configSys() {
     cat > "$tmpfn" <<EOF
 #!/bin/sh
 logger -t "scanbd: \$0" "Begin of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
-$SCRIPT_PATH
+sudo -u $USER $SCRIPT_PATH
 logger -t "scanbd: \$0" "End   of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
 EOF
     chmod 755 "$tmpfn"
     sudo mv "$tmpfn" "$scanbdPath/scripts/test.script"
     sudo chown root.root "$scanbdPath/scripts/test.script"
+    # change default user to root in scanbd.conf
+    # when set to user, script is run as root anyway from test.script, bug?
+    sudo sed -i -e 's/^\(\s*user\s*=\s*\)\([a-z]\+\)/\1root/' "$scanbdPath/scanbd.conf"
     # restart scanbd automatically on exit/segfault
     sudo sed -i -e '/\[Service\]/ aRestart=always' \
                 -e '/\[Service\]/ aRestartSec=5' "/lib/systemd/system/scanbd.service"
     sudo systemctl daemon-reload
+    sudo service scanbd restart
 
     # configure samba with a share for the OUT_DIR
     echo " => Configuring the samba file server:"
