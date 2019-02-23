@@ -163,9 +163,9 @@ classifyImg() {
 
     RATIO=0.14
     PIXCOUNT=$(convert "$INFN" -format "%[fx:w*h]" info:)
-    PIXCOUNT=$(python -c "print int($PIXCOUNT)")
+    PIXCOUNT=$(python -c "print(int($PIXCOUNT))")
     # calculate target pixel count, approx. 1M for 300dpi
-    PIXCOUNT_A4=$(python -c "print int(($RESOLUTION*210./25.4) * ($RESOLUTION*297./25.4) * $RATIO)")
+    PIXCOUNT_A4=$(python -c "print(int(($RESOLUTION*210./25.4) * ($RESOLUTION*297./25.4) * $RATIO))")
     RESIZECMD=""
     echo "$INFN: pix count: $PIXCOUNT, target: $PIXCOUNT_A4"
     if [ ! -z "$PIXCOUNT" ] && [ ! -z "$PIXCOUNT_A4" ] && [ "$PIXCOUNT" -gt "$PIXCOUNT_A4" ]; then
@@ -182,7 +182,7 @@ classifyImg() {
     # convert "$INFN" -shave 4%x4% $RESIZECMD -threshold 10% \
     #    -fuzz 20% -trim +repage $TMPFN 2> /dev/null
     PIXCOUNT_LEFT=$(convert "$TMPFN" -format "%[fx:w*h]" info:)
-    PIXCOUNT_LEFT=$(python -c "print int($PIXCOUNT_LEFT)")
+    PIXCOUNT_LEFT=$(python -c "print(int($PIXCOUNT_LEFT))")
     echo -n "$INFN: Test img pix count left: '$PIXCOUNT_LEFT' -> "
     if [ ! -z "$PIXCOUNT_LEFT" ] && [ "$PIXCOUNT_LEFT" -lt 100 ]; then
         # with less than 100 pix left, it's blank
@@ -234,7 +234,7 @@ def convInt(x, width = 2):
         pass
     return x
 y, m, d = sys.argv[1:]
-print convInt(y, 4) + "-" + convInt(m) + "-" + convInt(d)
+print(convInt(y, 4) + "-" + convInt(m) + "-" + convInt(d))
 EOF
 )
     # pdftotext -bbox "$OUTFILE" "$TEXTFILE"
