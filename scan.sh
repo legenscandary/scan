@@ -510,15 +510,15 @@ batchScan() {
         fi;
         rm -f ./*.single ./*.multi ./*.blank
         # in single mode: always create a new document for every two pages
-        if [ "$CURRENT_MODE" == single ]; then
-            [ -z "$DOC_DIR" ] || eval processDoc "$DOC_DIR" "$(timestamp doc)" &
+        if [ "$CURRENT_MODE" == single ] && [ -z "$DOC_DIR" ]; then
             DOC_DIR="$(getTmpDir doc)"
-        fi;
+        fi
         # move scanned images to appropriate document directory
         if [ -f "$FN1" ] || [ -f "$FN2" ]; then
             echo " -> $CURRENT_MODE mode, moving $(ls "$FN1" "$FN2" 2> /dev/null) to '$DOC_DIR'."
             mv -f "$FN1" "$FN2" "$DOC_DIR" 2> /dev/null
-        fi;
+        fi
+        [ "$CURRENT_MODE" == single ] && eval processDoc "$DOC_DIR" "$(timestamp doc)" &
         
         ls -1; # show directory contents in log file
         IDX=$((IDX+2))
@@ -532,8 +532,8 @@ batchScan() {
     # kill $(ps ax | grep "$scriptDir/.*\\.sh" | grep -v ' grep' \
     #              | awk '{print $1}')
 
-    # process the last document
-    [ -z "$DOC_DIR" ] || eval processDoc "$DOC_DIR" "$(timestamp doc)" &
+    # process the last multi document
+    [ "$CURRENT_MODE" == multi ] && [ ! -z "$DOC_DIR" ] && eval processDoc "$DOC_DIR" "$(timestamp doc)" &
 
     sleep 2
     # directory empty, remove it
