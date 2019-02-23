@@ -384,7 +384,7 @@ processDoc() {
     ################ OCR ################
     "
     OUTFILE="$OUT_DIR/$TS.pdf"
-    st2pdf "$OUTFILE" out_st/$SCANS
+    st2pdf "$OUTFILE" $(ls out_st/$SCANS)
 
     renameByContent "$OUTFILE" "$SUBDIR/text.txt"
 
