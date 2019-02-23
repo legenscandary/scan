@@ -175,8 +175,8 @@ classifyImg() {
         echo "$INFN -> ok."
     fi;
 
-    convert "$INFN" -shave 10%x5% "$RESIZECMD" -blur 3x1.5 -threshold 20% \
-        -fuzz 10% -trim +repage "$TMPFN" 2> /dev/null
+    convert "$INFN" -shave 10%x5% $RESIZECMD -blur 3x1.5 -threshold 20% \
+        -fuzz 10% -trim +repage "$TMPFN"
     # old setting had probs with thin paper, text shining through
     # TME invoice Feb-2014
     # convert "$INFN" -shave 4%x4% $RESIZECMD -threshold 10% \
