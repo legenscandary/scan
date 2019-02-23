@@ -550,7 +550,7 @@ installPackages() {
     sudo apt update -y
     sudo apt dist-upgrade -y
     echo "==> Installing additional software packages:"
-    sudo apt install -y scanbd samba
+    sudo apt install -y scanbd samba lockfile-progs imagemagick zbar-tools poppler-utils libtiff-tools scantailor tesseract-ocr tesseract-ocr-deu
 }
 
 cfg()
