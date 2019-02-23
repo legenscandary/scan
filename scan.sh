@@ -554,7 +554,10 @@ installPackages() {
     sudo apt update -y
     sudo apt dist-upgrade -y
     echo "==> Installing additional software packages:"
-    sudo apt install -y scanbd samba lockfile-progs imagemagick zbar-tools poppler-utils libtiff-tools scantailor tesseract-ocr tesseract-ocr-deu
+    sudo apt install -y scanbd samba lockfile-progs imagemagick zbar-tools poppler-utils libtiff-tools scantailor tesseract-ocr
+    echo "==> Installing selected OCR languages:"
+    tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
+    sudo apt install -y $tess_lang_packs
 }
 
 cfg()
