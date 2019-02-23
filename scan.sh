@@ -547,8 +547,8 @@ batchScan() {
 
 installPackages() {
     echo "==> Updating the system first:"
-    sudo apt update
-    sudo apt dist-upgrade
+    sudo apt update -y
+    sudo apt dist-upgrade -y
     echo "==> Installing additional software packages:"
     sudo apt install -y scanbd samba
 }
