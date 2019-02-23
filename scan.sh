@@ -22,7 +22,11 @@ SCRIPT_PATH="$(readlink -f "$0")"
 
 userExists() # returns a 'true' return code if the user exists already
 {
-    sudo -u $USER /bin/true > /dev/null 2>&1
+    if [ x"$USER"x = x"$(whoami)"x ]; then
+        /bin/true
+    else
+        sudo -u $USER /bin/true
+    fi
 }
 
 getOutdir()
