@@ -27,15 +27,15 @@ userExists() # returns a 'true' return code if the user exists already
 
 getOutdir()
 {
-	# make local subdir in scan user $HOME absolute
+    # make local subdir in scan user $HOME absolute
     outdir="$(sudo -u $USER sh -c "cd;
         mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
     printf %s "$outdir"
 }
 
 if ! userExists && [ x"$CMD"x != xinstallx ]; then
-	echo "Configured user '$USER' does not exist, please run 'install' first."
-	exit 1
+    echo "Configured user '$USER' does not exist, please run 'install' first."
+    exit 1
 fi
 
 # output directory for resulting PDF files
@@ -548,11 +548,11 @@ batchScan() {
 }
 
 installPackages() {
-	echo "==> Updating the system first:"
+    echo "==> Updating the system first:"
     sudo apt update
     sudo apt dist-upgrade
-	echo "==> Installing additional software packages:"
-	sudo apt install -y scanbd samba
+    echo "==> Installing additional software packages:"
+    sudo apt install -y scanbd samba
 }
 
 cfg()
@@ -619,7 +619,7 @@ configSamba()
     content="$(cfg "encrypt passwords" yes security)"
 
     # append share configuration
-	content="$content
+    content="$content
 $(cat <<EOF
 [$OUT_SUBDIR]
    path = $OUT_DIR
@@ -640,27 +640,27 @@ configSys() {
     echo "==> Configuring the system:"
     if ! userExists; then
         echo " => Creating user '$USER' ..."
-	    sudo adduser --system --disabled-login --shell=/bin/false $USER
+        sudo adduser --system --disabled-login --shell=/bin/false $USER
         sudo -u $USER sh -c "cd; mkdir $OUT_SUBDIR"
     fi
     OUT_DIR="$(getOutdir)"
-	echo " => Setting up scanbd ..."
-	local scanbdPath; scanbdPath="/etc/scanbd"
-	if [ ! -d "$scanbdPath" ]; then
-		echo "scanbd config path '$scanbdPath' not found!"
-		return 1
-	fi
-	sudo mkdir -p "$scanbdPath/scripts"
-	tmpfn="$(mktemp)"
-	cat > "$tmpfn" <<EOF
+    echo " => Setting up scanbd ..."
+    local scanbdPath; scanbdPath="/etc/scanbd"
+    if [ ! -d "$scanbdPath" ]; then
+        echo "scanbd config path '$scanbdPath' not found!"
+        return 1
+    fi
+    sudo mkdir -p "$scanbdPath/scripts"
+    tmpfn="$(mktemp)"
+    cat > "$tmpfn" <<EOF
 #!/bin/sh
 logger -t "scanbd: \$0" "Begin of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
 $SCRIPT_PATH
 logger -t "scanbd: \$0" "End   of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
 EOF
-	chmod 755 "$tmpfn"
-	sudo mv "$tmpfn" "$scanbdPath/scripts/test.script"
-	sudo chown root.root "$scanbdPath/scripts/test.script"
+    chmod 755 "$tmpfn"
+    sudo mv "$tmpfn" "$scanbdPath/scripts/test.script"
+    sudo chown root.root "$scanbdPath/scripts/test.script"
 
     # configure samba with a share for the OUT_DIR
     echo " => Configuring the samba file server:"
@@ -674,10 +674,10 @@ EOF
 }
 
 if [ "$CMD" = "install" ]; then
-	echo "Installing the scan script:"
+    echo "Installing the scan script:"
     echo "outdir: '$OUT_DIR', work dir: '$WORK_DIR', log: '$LOG_DIR'"
-	installPackages && configSys && \
-	echo "==> done."
+    installPackages && configSys && \
+    echo "==> done."
 
 elif [ $# -gt 0 ]; then
     # for any arguments provided, create available qr command sheets
