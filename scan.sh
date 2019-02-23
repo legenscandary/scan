@@ -380,8 +380,6 @@ processDoc() {
     ################ OCR ################
     "
     OUTFILE="$OUT_DIR/$TS.pdf"
-#    pdfsandwich-custom -lang eng+deu -nopreproc -rgb \
-#         -o "$OUTFILE" out_st/$SCANS
     st2pdf "$OUTFILE" out_st/$SCANS
 
     renameByContent "$OUTFILE" "$SUBDIR/text.txt"
