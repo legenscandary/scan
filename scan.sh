@@ -32,7 +32,9 @@ userExists() # returns a 'true' return code if the user exists already
 getOutdir()
 {
     # make local subdir in scan user $HOME absolute
-    outdir="$(sudo -u $USER sh -c "cd;
+    PREFIX=""
+    [ x"$USER"x = x"$(whoami)"x ] || PREFIX="sudo -u $USER"
+    outdir="$($PREFIX sh -c "cd;
         mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
     printf %s "$outdir"
 }
