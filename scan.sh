@@ -659,6 +659,10 @@ EOF
     chmod 755 "$tmpfn"
     sudo mv "$tmpfn" "$scanbdPath/scripts/test.script"
     sudo chown root.root "$scanbdPath/scripts/test.script"
+    # restart scanbd automatically on exit/segfault
+    sudo sed -i -e '/\[Service\]/ aRestart=always' \
+                -e '/\[Service\]/ aRestartSec=5' "/lib/systemd/system/scanbd.service"
+    sudo systemctl daemon-reload
 
     # configure samba with a share for the OUT_DIR
     echo " => Configuring the samba file server:"
