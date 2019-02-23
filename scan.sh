@@ -554,10 +554,20 @@ installPackages() {
     sudo apt update -y
     sudo apt dist-upgrade -y
     echo "==> Installing additional software packages:"
-    sudo apt install -y scanbd samba lockfile-progs imagemagick zbar-tools poppler-utils libtiff-tools scantailor tesseract-ocr
-    echo "==> Installing selected OCR languages:"
+    sudo apt install -y scanbd samba lockfile-progs imagemagick zbar-tools poppler-utils libtiff-tools scantailor dirmngr
+    # set up debian backports, regular dirmngr from stretch is buggy (DNS)
+    sudo mkdir -p /root/.gnupg
+    sudo sh -c "echo standard-resolver > /root/.gnupg/dirmngr.conf"
+    killall -q dirmngr
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E0B11894F66AEC98
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7638D0442B90D010
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 8B48AD6246925553
+    codename="$(lsb_release -cs)"
+    sudo sh -c "echo 'deb https://deb.debian.org/debian ${codename}-backports main contrib non-free' > /etc/apt/sources.list.d/debian-backports.list"
+    sudo apt-get update -y
+    echo "==> Installing selected and recent OCR packages:"
     tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
-    sudo apt install -y $tess_lang_packs
+    sudo apt install -y -t ${codename}-backports tesseract-ocr $tess_lang_packs
 }
 
 cfg()
