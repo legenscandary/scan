@@ -15,6 +15,7 @@
 USER=scansrv
 #USER=user
 OUT_SUBDIR=scans # output directory, samba share, relative to $USER home dir
+SMB_WORKGROUP=WORKGROUP
 DOC_LANG="deu+eng" # tesseract OCR languages
 CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 # set up some paths
@@ -620,7 +621,7 @@ configSamba()
 #    fi
 
     content="$(cfg '\[global\]' '')"
-    content="$(cfg workgroup WORKGROUP '\[global\]')"
+    content="$(cfg workgroup "$SMB_WORKGROUP" '\[global\]')"
     content="$(cfg "server string" "Scan Server" "workgroup")"
     content="$(cfg "server role" "standalone server" "server string")"
     local devs; devs="$(/sbin/ifconfig | \
