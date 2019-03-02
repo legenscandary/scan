@@ -553,10 +553,13 @@ batchScan() {
 }
 
 installPackages() {
-    echo "==> Updating the system first:"
+    echo " => Updating the system first:"
+    echo
     sudo apt update -y
     sudo apt dist-upgrade -y
-    echo "==> Installing additional software packages:"
+    echo
+    echo " => Installing additional software packages for image processing and file server:"
+    echo
     sudo apt install -y curl scanbd samba lockfile-progs imagemagick \
         zbar-tools poppler-utils libtiff-tools scantailor
     # get missing keys required for backports directly, dirmngr DNS is broken in this ver
@@ -565,7 +568,9 @@ installPackages() {
     codename="$(lsb_release -cs)"
     sudo sh -c "echo 'deb https://deb.debian.org/debian ${codename}-backports main contrib non-free' > /etc/apt/sources.list.d/debian-backports.list"
     sudo apt-get update -y
-    echo "==> Installing selected and recent OCR packages:"
+    echo
+    echo " => Installing selected OCR packages:"
+    echo
     tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
     sudo apt install -y -t ${codename}-backports tesseract-ocr $tess_lang_packs
 }
@@ -646,7 +651,8 @@ EOF
 }
 
 configSys() {
-    echo "==> Configuring the system:"
+    echo
+    echo " => Configuring the system:"
     if ! userExists; then
         echo " => Creating user '$USER' ..."
         sudo adduser --system --ingroup scanner --disabled-login --shell=/bin/false $USER
@@ -681,38 +687,38 @@ EOF
 
     # configure samba with a share for the OUT_DIR
     echo " => Configuring the samba file server:"
+    echo
     sambacfg="/etc/samba/smb.conf"
     sudo mv "$sambacfg" "$sambacfg.bckp_$(date +%Y%m%d%H%M%S)"
     configSamba > "$tmpfn"
     sudo mv "$tmpfn" "$sambacfg"
     sudo chown root.root "$sambacfg"
-    cat << EOF
-
-Please specify a password for newly created user '$USER' in workgroup '$SMB_WORKGROUP'.
-Use it to connect to the new windows network share
-
-  \\\\$(hostname)\\$OUT_SUBDIR
-
-where all scanned documents will be stored.
-
-EOF
+    echo
+    echo "Please specify a password for newly created user '$USER'"\
+         " in workgroup '$SMB_WORKGROUP'."
+    echo "Use it to connect to the new windows network share"
+    echo
+    echo "    \\\\$(hostname)\\$OUT_SUBDIR"
+    echo
+    echo "where all scanned documents will be stored."
+    echo
     for num in seq 1 3; do sudo smbpasswd -L -a $USER && break; done
-    cat << EOF
-
- => To update the password later on, run:
-
-    sudo smbpasswd -L -a $USER
-    sudo service smbd restart
-EOF
+    echo
+    echo " => To update the password later on, run:"
+    echo
+    echo "    sudo smbpasswd -L -a $USER"
+    echo "    sudo service smbd restart"
     sudo service smbd restart
 }
 
 if [ "$CMD" = "install" ]; then
-    echo "Installing the scan script:"
-    installPackages && configSys && cat << EOF
-
- => Installation done, enjoy!
-EOF
+    echo
+    echo " ## Installing the scan script ##"
+    echo
+    installPackages && configSys && (\
+    echo
+    echo " ## Installation done, enjoy! ##"
+    echo)
 
 elif [ $# -gt 0 ]; then
     # for any arguments provided, create available qr command sheets
