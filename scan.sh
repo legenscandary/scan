@@ -686,7 +686,24 @@ EOF
     configSamba > "$tmpfn"
     sudo mv "$tmpfn" "$sambacfg"
     sudo chown root.root "$sambacfg"
+    cat << EOF
+
+Please specify a password for newly created user '$USER' in workgroup '$SMB_WORKGROUP'.
+Use it to connect to the new windows network share
+
+  \\\\$(hostname)\\$OUT_SUBDIR
+
+where all scanned documents will be stored.
+
+EOF
+    for num in seq 1 3; do sudo smbpasswd -L -a $USER && break; done
+    cat << EOF
+
+ => To update the password later on, run:
+
     sudo smbpasswd -L -a $USER
+    sudo service smbd restart
+EOF
     sudo service smbd restart
 }
 
