@@ -557,14 +557,11 @@ installPackages() {
     sudo apt update -y
     sudo apt dist-upgrade -y
     echo "==> Installing additional software packages:"
-    sudo apt install -y scanbd samba lockfile-progs imagemagick zbar-tools poppler-utils libtiff-tools scantailor dirmngr
-    # set up debian backports, regular dirmngr from stretch is buggy (DNS)
-    sudo mkdir -p /root/.gnupg
-    sudo sh -c "echo standard-resolver > /root/.gnupg/dirmngr.conf"
-    killall -q dirmngr
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E0B11894F66AEC98
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7638D0442B90D010
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 8B48AD6246925553
+    sudo apt install -y curl scanbd samba lockfile-progs imagemagick \
+        zbar-tools poppler-utils libtiff-tools scantailor
+    # get missing keys required for backports directly, dirmngr DNS is broken in this ver
+    curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x7638D0442B90D010' \
+        | sudo apt-key add -
     codename="$(lsb_release -cs)"
     sudo sh -c "echo 'deb https://deb.debian.org/debian ${codename}-backports main contrib non-free' > /etc/apt/sources.list.d/debian-backports.list"
     sudo apt-get update -y
