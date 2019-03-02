@@ -709,9 +709,10 @@ EOF
 
 if [ "$CMD" = "install" ]; then
     echo "Installing the scan script:"
-    echo "outdir: '$OUT_DIR', work dir: '$WORK_DIR', log: '$LOG_DIR'"
-    installPackages && configSys && \
-    echo "==> done."
+    installPackages && configSys && cat << EOF
+
+ => Installation done, enjoy!
+EOF
 
 elif [ $# -gt 0 ]; then
     # for any arguments provided, create available qr command sheets
