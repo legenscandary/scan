@@ -614,12 +614,6 @@ cfg()
 configSamba()
 {
     local content
-#    local fn="$1"
-#    if [ ! -z "$fn" ] && [ -f "$fn" ]; then
-#        echo "config_samba: '$fn'" 1>&2
-#        content="$(cat "$fn")"
-#    fi
-
     content="$(cfg '\[global\]' '')"
     content="$(cfg workgroup "$SMB_WORKGROUP" '\[global\]')"
     content="$(cfg "server string" "Scan Server" "workgroup")"
