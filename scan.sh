@@ -712,13 +712,17 @@ EOF
 }
 
 if [ "$CMD" = "install" ]; then
+    install_start_ts=$(date +%s)
     echo
     echo " ## Installing the scan script ##"
     echo
     installPackages && configSys && (\
     echo
-    echo " ## Installation done, enjoy! ##"
-    echo)
+    echo " ## Installation done, enjoy! ##" )
+    secs=$(($(date +%s)-install_start_ts))
+    mins=$((secs/60))
+    secs=$((secs-mins*60))
+    echo " (took $mins min $secs sec to install)"; echo
 
 elif [ $# -gt 0 ]; then
     # for any arguments provided, create available qr command sheets
