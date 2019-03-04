@@ -629,6 +629,7 @@ configSamba()
     local smbpassfn="/etc/samba/smbpasswd"
     content="$(cfg "passdb backend" "smbpasswd:$smbpassfn" "server role")"
     content="$(cfg "unix password sync" yes "passdb backend")"
+    content="$(cfg "unix extensions" no "unix")"
     content="$(cfg security user usershare)"
     content="$(cfg "encrypt passwords" yes security)"
 
@@ -641,7 +642,6 @@ $(cat <<EOF
    writable = yes
    create mask = 0644
    directory mask = 0755
-   unix extensions = no
 EOF
 )"
 
