@@ -695,7 +695,7 @@ EOF
     sudo chown root.root "$sambacfg"
     echo
     echo "Please specify a password for newly created user '$USER'"\
-         " in workgroup '$SMB_WORKGROUP'."
+         "in workgroup '$SMB_WORKGROUP'."
     echo "Use it to connect to the new windows network share"
     echo
     echo "    \\\\$(hostname)\\$OUT_SUBDIR"
@@ -714,7 +714,7 @@ EOF
 if [ "$CMD" = "install" ]; then
     install_start_ts=$(date +%s)
     echo
-    echo " ## Installing the scan script ##"
+    echo " ## Installing the legenscandary scan script! ##"
     echo
     installPackages && configSys && (\
     echo
@@ -735,7 +735,7 @@ else
     chmod -fR a+rx "$OUT_DIR"/*
     # do not remove the queue, next batch scan will append jobs
     # delIntermediate || rm -f "$QUEUEFN"
-fi;
+fi
 
 # remove timestamp file, if any
 [ -z "$TIMESTAMPFN" ] || rm -f "$TIMESTAMPFN"
