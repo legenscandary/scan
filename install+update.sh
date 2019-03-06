@@ -11,19 +11,21 @@
 # add a way to reset on scanner jamming:
 # killall scanimage; kill $(ps ax | grep 'scanbuttond/.*\.sh' | grep -v ' grep' | awk '{print $1}'); rm -f "$(ls -1dt /home/scans/scans/work/scan_* | head -n1)"/*.tif; touch "$(ls -1dt /home/scans/scans/work/scan_* | head -n1)"/done
 
-# user to run this script as; created during install
-USER=scansrv
-OUT_SUBDIR=scans # output directory, samba share, relative to $USER home dir
-SMB_WORKGROUP=WORKGROUP
-DOC_LANG="deu+eng" # tesseract OCR languages
-CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 # set up some paths
 SCRIPT_PATH="$(readlink -f "$0")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+SCANBD_DIR="/etc/scanbd"
+SCANBD_SCRIPTS="$SCANBD_DIR/scripts"
+REPO_PATH="$SCANBD_SCRIPTS/legenscandary"
+CFGFN="scan.conf"
+CFGPATH="$REPO_PATH/$CFGFN"
+REPO_URL='https://github.com/legenscandary/scan.git'
+CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 
 # tests if a user with the provided name exists
 userExists()
 {
-    grep -q "^$1:" /etc/passwd
+    id -u "$1" > /dev/null 2>&1
 }
 
 # returns the output dir based on the provided user, has to exist
@@ -43,20 +45,43 @@ getOutdir()
     printf %s "$outdir"
 }
 
-# FIXME: move this to config
-DEVICE_NAME='net:localhost:fujitsu:ScanSnap iX500:94825' # sane device to be used
-[ -z "$SCANBD_DEVICE" ] || DEVICE_NAME="$SCANBD_DEVICE"
-# max secs to wait for images from scanner, could be determined in test run
-SCANTIMEOUT=20
-# benchmark command:
-# ts_start=$(date +%s); scanimage ... ; scan_time=$(expr $(date +%s)-$ts_start); echo "scan duration: $scan_time seconds"
-# selected max width&height of ix500, using autocrop by driver
-WIDTH="221.121"
-HEIGHT="500.0"
-RESOLUTION=300
-
 loadConfig()
 {
+    # check for config file, if not existent, create one
+    if [ ! -f "$CFGPATH" ]; then
+        echo "Config file does not exist, creating one with default settings."
+        sudo mkdir -p "$(dirname "$CFGPATH")"
+        cat > "$CFGPATH" <<EOF
+#
+# Legenscandary configuration
+#
+# Changes get active by executing $SCRIPT_PATH
+
+# sane device to be used
+SCAN_DEVICE=
+# tesseract OCR languages
+DOC_LANG="deu+eng"
+# default scan resolution, same resolution goes to OCR
+RESOLUTION=300
+# selected max width&height of the scanner, assuming using autocrop by driver
+WIDTH="221.121"
+HEIGHT="500.0"
+# max secs to wait for images from scanner, can be determined in test run
+# benchmark command: ts_start=$(date +%s); scanimage ... ; 
+# scan_time=$(expr $(date +%s)-$ts_start); echo "scan duration: $scan_time seconds"
+# if there arrive no images within that time and scanimage is still running,
+# it is killed, assuming paper jam or similiar lock up
+SCANTIMEOUT=20
+# user to run as, set up during install
+USER=legenscandary
+# output directory, samba share, relative to \$USER home dir
+OUT_SUBDIR=scans
+# samba workgroup
+SMB_WORKGROUP=WORKGROUP
+
+EOF
+    fi
+    source "$CFGPATH"
 }
 
 installPackages()
@@ -68,7 +93,7 @@ installPackages()
     echo
     echo " => Installing additional software packages for image processing and file server:"
     echo
-    sudo apt install -y curl samba lockfile-progs imagemagick \
+    sudo apt install -y git curl samba lockfile-progs imagemagick \
         zbar-tools poppler-utils libtiff-tools scantailor sane-utils openbsd-inetd
     # get missing keys required for backports directly, dirmngr DNS is broken in this ver
     curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x7638D0442B90D010' \
@@ -81,20 +106,20 @@ installPackages()
     entry="$(grep 'sane-port.*saned$' $inetfn)"
     sudo update-inetd --remove sane-port
     tempdir="$(mktemp -d)"
-    pushd "$tempdir"
+    cd "$tempdir"
     curl -O http://ftp.debian.org/debian/pool/main/c/confuse/libconfuse-common_3.2.2+dfsg-1_all.deb
     curl -O http://ftp.debian.org/debian/pool/main/c/confuse/libconfuse2_3.2.2+dfsg-1_armhf.deb
     curl -O http://ftp.debian.org/debian/pool/main/s/scanbd/scanbd_1.5.1-4_armhf.deb
     echo 'f1423d3de46e57df6b7b300972571d3b4edf18e7befcdbebb422388eea91086b *libconfuse-common_3.2.2+dfsg-1_all.deb
 b47a9c2339bcd0599b1328971661f58fca5a4b86014a17e31f458add64c71a38 *libconfuse2_3.2.2+dfsg-1_armhf.deb
 1fa024fa18243196227c963245395e1c321d4d6f14f4a4235fffffeb76c73339 *scanbd_1.5.1-4_armhf.deb' | sha256sum --strict -c && sudo dpkg --force-confdef -i *.deb
-    popd
     sudo sh -c "(echo '$entry'; echo) >> '$inetfn'"
     sudo service scanbd restart
 
     echo
     echo " => Installing selected OCR packages:"
     echo
+    [ -z "$DOC_LANG" ] && DOC_LANG="eng" # minimal language, updated from config file later
     tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
     sudo apt install -y -t ${codename}-backports tesseract-ocr $tess_lang_packs
 }
@@ -185,25 +210,26 @@ configSys()
     fi
     OUT_DIR="$(getOutdir "$user" "$OUT_SUBDIR")"
     echo " => Setting up scanbd ..."
-    local scanbdPath; scanbdPath="/etc/scanbd"
-    if [ ! -d "$scanbdPath" ]; then
-        echo "scanbd config path '$scanbdPath' not found!"
+    if [ ! -d "$SCANBD_DIR" ]; then
+        echo "scanbd config path '$SCANBD_DIR' not found!"
         return 1
     fi
-    sudo mkdir -p "$scanbdPath/scripts"
+    local scriptPath="$SCANBD_SCRIPTS/test.script"
+    sudo mkdir -p "$SCANBD_SCRIPTS"
     tmpfn="$(mktemp)"
     cat > "$tmpfn" <<EOF
 #!/bin/sh
 logger -t "scanbd: \$0" "Begin of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
-sudo -u $USER $SCRIPT_PATH
+sudo -u $USER $SCRIPT_DIR/scan.sh
 logger -t "scanbd: \$0" "End   of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
 EOF
     chmod 755 "$tmpfn"
-    sudo mv "$tmpfn" "$scanbdPath/scripts/test.script"
-    sudo chown root.root "$scanbdPath/scripts/test.script"
+    sudo mv "$tmpfn" "$scriptPath"
+    sudo chown root.root "$scriptPath"
+    sudo chown -R "$USER" "$SCRIPT_DIR" # let the user own it who runs the script
     # change default user to root in scanbd.conf
     # when set to user, script is run as root anyway from test.script, bug?
-    sudo sed -i -e 's/^\(\s*user\s*=\s*\)\([a-z]\+\)/\1root/' "$scanbdPath/scanbd.conf"
+    sudo sed -i -e 's/^\(\s*user\s*=\s*\)\([a-z]\+\)/\1root/' "$SCANBD_DIR/scanbd.conf"
     # restart scanbd automatically on exit/segfault
     sudo sed -i -e '/\[Service\]/ aRestart=always' \
                 -e '/\[Service\]/ aRestartSec=5' "/lib/systemd/system/scanbd.service"
@@ -219,6 +245,11 @@ EOF
     sudo mv "$tmpfn" "$sambacfg"
     sudo chown root.root "$sambacfg"
     install_end_ts=$(date +%s) # measure elapsed time before user input
+}
+
+# interactive function for setting the samba share password
+add_samba_user()
+{
     echo
     echo "Please specify a password for newly created user '$USER'"\
          "in workgroup '$SMB_WORKGROUP'."
@@ -234,25 +265,99 @@ EOF
     echo
     echo "    sudo smbpasswd -L -a $USER"
     echo "    sudo service smbd restart"
+    echo
     sudo service smbd restart
+}
+
+# interactive function for determining the scanner device
+get_scan_device()
+{
+    echo
+    echo "Searching for the scanner to be used ..."
+    read -p "Please make sure the scanner is connected, press <enter> to continue:"
+    sudo service scanbd stop
+    # TODO: check scanimage output for multiple devices
+    local dev; dev="$(sudo -u $USER scanimage -f %d)"
+    sudo service scanbd start
+    if [ -z "$dev" ]; then
+        echo " => No scanner found!"
+    else
+        echo " => using '$dev'"
+        sed -i -e "s/\(SCANBD_DIR=\).*\$/\\1'$dev'/g" "$CFGPATH"
+    fi
+    echo "The scanner can be changed later by updating the entry 'SCAN_DEVICE' in '$CFGPATH'."
+    echo "Find it by running:"
+    echo
+    echo "    sudo service scanbd stop"
+    echo "    sudo -u $USER scanimage -L"
+    echo "    sudo service scanbd start"
+    echo
+}
+
+# scenario 1: called from anywhere: install us to scripts dir, git clone
+# scenario 2: called from scripts dir within git repo, git pull
+# scenario 3: called from scripts dir, no git repo
+updateScripts()
+{
+    echo
+    echo " ## Installing the legenscandary scan script! ##"
+    echo
+    if [ ! -d "$SCANBD_DIR" ] \
+    || [ "$(dirname "$SCRIPT_DIR")" != "$SCANBD_SCRIPTS" ]; then
+        # assuming first time call on this system
+        installPackages # install scanbd first
+        loadConfig
+        configSys
+        add_samba_user
+        get_scan_device
+        # running this again later in stage2 but without interactive functions
+    fi
+    if [ ! -d "$SCANBD_DIR" ]; then # scanbd should be installed by now
+        echo "scanbd config path '$SCANBD_DIR' not found,"\
+             "it seems, scanbd could not be installed!"
+        exit 1
+    fi
+    if [ ! -d "$REPO_PATH" ]; then # create the repo if doesn't exist yet
+        sudo mkdir -p "$REPO_PATH" && sudo chown $(whoami) "$REPO_PATH"
+    fi
+    cd "$REPO_PATH"
+    local installScript="$REPO_PATH/install.sh"
+    if [ -d ".git" ]; then # a git repo yet, update scripts?
+        git pull
+    elif [ ! -f "$installScript" ]; then # empty dir possibly
+        git clone $REPO_URL .
+    fi
+    $installScript stage2 $install_start_ts
 }
 
 install()
 {
-    install_start_ts=$(date +%s)
-    install_end_ts=$install_start_ts
-    echo
-    echo " ## Installing the legenscandary scan script! ##"
-    echo
-    loadConfig && installPackages && configSys && (\
+    if ! cd "$REPO_PATH"; then
+        echo "Could not change to directory '$REPO_PATH'!"
+        echo "Please run $SCRIPT_PATH again."
+        exit 1
+    fi
+    loadConfig
+    installPackages && configSys && (\
     echo
     echo " ## Installation done, enjoy! ##" )
-    secs=$((install_end_ts-install_start_ts))
-    mins=$((secs/60))
-    secs=$((secs-mins*60))
-    echo " (took $mins min $secs sec to install)"; echo
+    # show elapsed time
+    if [ ! -z "$install_start_ts" ] && [ ! -z "$install_end_ts" ]; then
+        secs=$((install_end_ts-install_start_ts))
+        mins=$((secs/60))
+        secs=$((secs-mins*60))
+        echo " (took $mins min $secs sec to install)"; echo
+    fi
 }
 
-install
+# if not set, remember start time of installation
+[ -z "$install_start_ts" ] && install_start_ts=$(date +%s)
+
+if [ "$CMD" = stage2 ]; then
+    install_start_ts="$2" # get start time from previous invokation
+    install
+else
+    updateScripts
+fi
 
 # vim: set ts=4 sts=4 sw=4 tw=0:
