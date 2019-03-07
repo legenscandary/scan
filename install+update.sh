@@ -28,23 +28,6 @@ userExists()
     id -u "$1" > /dev/null 2>&1
 }
 
-# returns the output dir based on the provided user, has to exist
-getOutdir()
-{
-    local user="$1"
-    local subdir="$2"
-    if ! userExists "$user"; then
-        echo "getOutdir: Provided user '$user' does not exist, giving up!" 1>&2
-        exit 1
-    fi
-    # make local subdir in scan user $HOME absolute
-    local prefix=""
-    [ x"$user"x = x"$(whoami)"x ] || prefix="sudo -u '$user'"
-    local outdir; outdir="$($prefix sh -c "cd;
-        mkdir -p '$subdir'; cd '$subdir'; pwd" 2> /dev/null)"
-    printf %s "$outdir"
-}
-
 loadConfig()
 {
     # check for config file, if not existent, create one
@@ -206,9 +189,11 @@ configSys()
     if ! userExists "$USER"; then
         echo " => Creating user '$USER' ..."
         sudo adduser --system --ingroup scanner --disabled-login --shell=/bin/false $USER
-        sudo -u $USER sh -c "cd; mkdir $OUT_SUBDIR"
+        sudo -u "$USER" sh -c "cd; mkdir $OUT_SUBDIR"
     fi
-    OUT_DIR="$(getOutdir "$user" "$OUT_SUBDIR")"
+    # assuming user exists now, create OUT_DIR
+    OUT_DIR="$(sudo -u "$USER" sh -c "cd;
+        mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
     echo " => Setting up scanbd ..."
     if [ ! -d "$SCANBD_DIR" ]; then
         echo "scanbd config path '$SCANBD_DIR' not found!"
