@@ -11,63 +11,12 @@
 # add a way to reset on scanner jamming:
 # killall scanimage; kill $(ps ax | grep 'scanbuttond/.*\.sh' | grep -v ' grep' | awk '{print $1}'); rm -f "$(ls -1dt /home/scans/scans/work/scan_* | head -n1)"/*.tif; touch "$(ls -1dt /home/scans/scans/work/scan_* | head -n1)"/done
 
-# user to run this script as; created during install
-USER=scansrv
-#USER=user
-OUT_SUBDIR=scans # output directory, samba share, relative to $USER home dir
-SMB_WORKGROUP=WORKGROUP
-DOC_LANG="deu+eng" # tesseract OCR languages
-CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 # set up some paths
 SCRIPT_PATH="$(readlink -f "$0")"
-
-userExists() # returns a 'true' return code if the user exists already
-{
-    if [ x"$USER"x = x"$(whoami)"x ]; then
-        /bin/true
-    else
-        sudo -u $USER /bin/true
-    fi
-}
-
-getOutdir()
-{
-    # make local subdir in scan user $HOME absolute
-    PREFIX=""
-    [ x"$USER"x = x"$(whoami)"x ] || PREFIX="sudo -u $USER"
-    outdir="$($PREFIX sh -c "cd;
-        mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
-    printf %s "$outdir"
-}
-
-if ! userExists && [ x"$CMD"x != xinstallx ]; then
-    echo "Configured user '$USER' does not exist, please run 'install' first."
-    exit 1
-fi
-
-# output directory for resulting PDF files
-OUT_DIR="$(getOutdir)"
-DEVICE_NAME='net:localhost:fujitsu:ScanSnap iX500:94825' # sane device to be used
-[ -z "$SCANBD_DEVICE" ] || DEVICE_NAME="$SCANBD_DEVICE"
-# max secs to wait for images from scanner, could be determined in test run
-SCANTIMEOUT=20
-# benchmark command:
-# ts_start=$(date +%s); scanimage ... ; scan_time=$(expr $(date +%s)-$ts_start); echo "scan duration: $scan_time seconds"
-# selected max width&height of ix500, using autocrop by driver
-WIDTH="221.121"
-HEIGHT="500.0"
-RESOLUTION=300
-
-if [ -d "$OUT_DIR" ]; then # skipped in install mode
-    # working directory for intermediate files such as scanned images
-    # a persistent location, preferably not in /tmp to survive crash/reboot
-    WORK_DIR="$OUT_DIR/work"
-    # common queue for multiple instances
-    QUEUEFN="$WORK_DIR/queue"
-    LOG_DIR="$OUT_DIR/log"
-fi
-TIMESTAMPFN="$(mktemp)"
-TRJOBSFN="$(mktemp)"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+CFGFN="scan.conf"
+CFGPATH="$SCRIPT_DIR/$CFGFN"
+CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 SCAN_PREFIX="scan"
 # command to replace illegal file name chars (Windows) by underscore (renameByContent())
 SANITIZE='tr "/\\\\?<>:*|&" _'
@@ -292,6 +241,7 @@ st2pdf() {
     local cpu_count;
     cpu_count=$(grep -c processor < /proc/cpuinfo)
 
+    TRJOBSFN="$(mktemp)"
     for fn in "$@"; do
         [ -f "$fn" ] || continue
         echo "Processing '$fn' ..."
@@ -306,7 +256,7 @@ st2pdf() {
     done
 
     wait # wait for all jobs to finish
-    rm "$TRJOBSFN"
+    rm -f "$TRJOBSFN"
 
     #-dPDFSETTINGS=/screen   (screen-view-only quality, 72 dpi images)
     #-dPDFSETTINGS=/ebook    (low quality, 150 dpi images)
@@ -429,7 +379,8 @@ removeDeskewArtifacts() {
         "$FN"
 }
 
-batchScan() {
+batchScan()
+{
     PREFIX="$1"
     TS="$2"
 
@@ -552,20 +503,67 @@ batchScan() {
     lockfile-remove "$LOCKFILE"
 }
 
-if [ $# -gt 0 ]; then
-    # for any arguments provided, create available qr command sheets
-    eval createCommandSheets "$(timestamp command-sheets)"
+userExists() # returns a 'true' return code if the user exists already
+{
+    id -u "$1" > /dev/null 2>&1
+}
 
-else
-    eval batchScan "$(timestamp $SCAN_PREFIX)"
-    # do not wait, this would include processing of all documents as well
-    # wait # for all children
-    chmod -fR a+rx "$OUT_DIR"/*
-    # do not remove the queue, next batch scan will append jobs
-    # delIntermediate || rm -f "$QUEUEFN"
-fi
+runInstallFirst()
+{
+    echo "Please run '$(ls install*.sh)' first."
+}
 
-# remove timestamp file, if any
-[ -z "$TIMESTAMPFN" ] || rm -f "$TIMESTAMPFN"
+main()
+{
+    # load config file, if there is any
+    if [ ! -f "$CFGPATH" ]; then
+        echo "Config file '$CFGPATH' not found!"
+        runInstallFirst
+        exit 1
+    fi
+    source "$CFGPATH"
+
+    # check for the correct user
+    if ! userExists; then
+        echo "Configured user '$USER' does not exist!"
+        runInstallFirst
+        exit 1
+    fi
+    if [ "$(whoami)" != "$USER" ]; then
+        echo "Wrong user, this script expects to be run by user '$USER'!"
+        runInstallFirst
+        exit 1
+    fi
+    # output directory for resulting PDF files, expected in current users $HOME
+    OUT_DIR="$(cd && cd "$OUT_SUBDIR" && pwd)"
+    if [ ! -d "$OUT_DIR" ]; then
+        echo "Could not determine output directory!"
+        exit 1
+    fi
+    # working directory for intermediate files such as scanned images
+    # a persistent location, preferably not in /tmp to survive crash/reboot
+    WORK_DIR="$OUT_DIR/work"
+    # common queue for multiple instances
+    QUEUEFN="$WORK_DIR/queue"
+    LOG_DIR="$OUT_DIR/log"
+    TIMESTAMPFN="$(mktemp)"
+
+    if [ -z "$CMD" ]; then
+        eval batchScan "$(timestamp $SCAN_PREFIX)"
+        # do not wait, this would include processing of all documents as well
+        # wait # for all children
+        chmod -fR a+rx "$OUT_DIR"/*
+        # do not remove the queue, next batch scan will append jobs
+        # delIntermediate || rm -f "$QUEUEFN"
+    else
+        # for any arguments provided, create available qr command sheets
+        eval createCommandSheets "$(timestamp command-sheets)"
+    fi
+
+    # remove timestamp file, if any
+    rm -f "$TIMESTAMPFN"
+}
+
+main
 
 # vim: set ts=4 sts=4 sw=4 tw=0:
