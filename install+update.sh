@@ -21,6 +21,7 @@ CFGFN="scan.conf"
 CFGPATH="$REPO_PATH/$CFGFN"
 REPO_URL='https://github.com/legenscandary/scan.git'
 CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
+SMBPASSFN="/etc/samba/smbpasswd"
 
 # tests if a user with the provided name exists
 userExists()
@@ -33,7 +34,7 @@ loadConfig()
     # check for config file, if not existent, create one
     if [ ! -f "$CFGPATH" ]; then
         echo "Config file does not exist, creating one with default settings."
-        sudo mkdir -p "$(dirname "$CFGPATH")"
+        sudo mkdir -p "$(dirname "$CFGPATH")" && sudo chown "$USER" "$REPO_PATH"
         cat > "$CFGPATH" <<EOF
 #
 # Legenscandary configuration
@@ -158,8 +159,7 @@ configSamba()
     content="$(cfg "interfaces" "$devs" "dns proxy")"
     content="$(cfg "bind interfaces only" yes "interfaces")"
     content="$(cfg "domain master" yes "bind interfaces only")"
-    local smbpassfn="/etc/samba/smbpasswd"
-    content="$(cfg "passdb backend" "smbpasswd:$smbpassfn" "server role")"
+    content="$(cfg "passdb backend" "smbpasswd:$SMBPASSFN" "server role")"
     content="$(cfg "unix password sync" yes "passdb backend")"
     content="$(cfg "unix extensions" no "unix")"
     content="$(cfg security user usershare)"
@@ -180,56 +180,6 @@ EOF
     echo "# Generated SAMBA configuration on $(date +'%Y-%m-%d %H:%M:%S')"
     echo "# by $SCRIPT_PATH"
     echo "$content"
-}
-
-configSys()
-{
-    echo
-    echo " => Configuring the system:"
-    if ! userExists "$USER"; then
-        echo " => Creating user '$USER' ..."
-        sudo adduser --system --ingroup scanner --disabled-login --shell=/bin/false $USER
-        sudo -u "$USER" sh -c "cd; mkdir $OUT_SUBDIR"
-    fi
-    # assuming user exists now, create OUT_DIR
-    OUT_DIR="$(sudo -u "$USER" sh -c "cd;
-        mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
-    echo " => Setting up scanbd ..."
-    if [ ! -d "$SCANBD_DIR" ]; then
-        echo "scanbd config path '$SCANBD_DIR' not found!"
-        return 1
-    fi
-    local scriptPath="$SCANBD_SCRIPTS/test.script"
-    sudo mkdir -p "$SCANBD_SCRIPTS"
-    tmpfn="$(mktemp)"
-    cat > "$tmpfn" <<EOF
-#!/bin/sh
-logger -t "scanbd: \$0" "Begin of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
-sudo -u $USER $SCRIPT_DIR/scan.sh
-logger -t "scanbd: \$0" "End   of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
-EOF
-    chmod 755 "$tmpfn"
-    sudo mv "$tmpfn" "$scriptPath"
-    sudo chown root.root "$scriptPath"
-    sudo chown -R "$USER" "$SCRIPT_DIR" # let the user own it who runs the script
-    # change default user to root in scanbd.conf
-    # when set to user, script is run as root anyway from test.script, bug?
-    sudo sed -i -e 's/^\(\s*user\s*=\s*\)\([a-z]\+\)/\1root/' "$SCANBD_DIR/scanbd.conf"
-    # restart scanbd automatically on exit/segfault
-    sudo sed -i -e '/\[Service\]/ aRestart=always' \
-                -e '/\[Service\]/ aRestartSec=5' "/lib/systemd/system/scanbd.service"
-    sudo systemctl daemon-reload
-    sudo service scanbd restart
-
-    # configure samba with a share for the OUT_DIR
-    echo " => Configuring the samba file server:"
-    echo
-    sambacfg="/etc/samba/smb.conf"
-    sudo mv "$sambacfg" "$sambacfg.bckp_$(date +%Y%m%d%H%M%S)"
-    configSamba > "$tmpfn"
-    sudo mv "$tmpfn" "$sambacfg"
-    sudo chown root.root "$sambacfg"
-    install_end_ts=$(date +%s) # measure elapsed time before user input
 }
 
 # interactive function for setting the samba share password
@@ -279,6 +229,62 @@ get_scan_device()
     echo
 }
 
+configSys()
+{
+    echo
+    echo " => Configuring the system:"
+    if ! userExists "$USER"; then
+        echo " => Creating user '$USER' ..."
+        sudo adduser --system --ingroup scanner --disabled-login --shell=/bin/false $USER
+        sudo -u "$USER" sh -c "cd; mkdir $OUT_SUBDIR"
+    fi
+    # assuming user exists now, create OUT_DIR
+    OUT_DIR="$(sudo -u "$USER" sh -c "cd;
+        mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
+    echo " => Setting up scanbd ..."
+    if [ ! -d "$SCANBD_DIR" ]; then
+        echo "scanbd config path '$SCANBD_DIR' not found!"
+        return 1
+    fi
+    local scriptPath="$SCANBD_SCRIPTS/test.script"
+    sudo mkdir -p "$SCANBD_SCRIPTS"
+    tmpfn="$(mktemp)"
+    cat > "$tmpfn" <<EOF
+#!/bin/sh
+logger -t "scanbd: \$0" "Begin of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
+sudo -u $USER $SCRIPT_DIR/scan.sh
+logger -t "scanbd: \$0" "End   of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
+EOF
+    chmod 755 "$tmpfn"
+    sudo mv "$tmpfn" "$scriptPath"
+    sudo chown root.root "$scriptPath"
+    sudo chown -R "$USER" "$SCRIPT_DIR" # let the user own it who runs the script
+    # change default user to root in scanbd.conf
+    # when set to user, script is run as root anyway from test.script, bug?
+    sudo sed -i -e 's/^\(\s*user\s*=\s*\)\([a-z]\+\)/\1root/' "$SCANBD_DIR/scanbd.conf"
+    # restart scanbd automatically on exit/segfault
+    sudo sed -i -e '/\[Service\]/ aRestart=always' \
+                -e '/\[Service\]/ aRestartSec=5' "/lib/systemd/system/scanbd.service"
+    sudo systemctl daemon-reload
+    sudo service scanbd restart
+
+    # configure samba with a share for the OUT_DIR
+    echo " => Configuring the samba file server:"
+    echo
+    sambacfg="/etc/samba/smb.conf"
+    sudo mv "$sambacfg" "$sambacfg.bckp_$(date +%Y%m%d%H%M%S)"
+    configSamba > "$tmpfn"
+    sudo mv "$tmpfn" "$sambacfg"
+    sudo chown root.root "$sambacfg"
+    # create samba user if it does not exist yet
+    if [ ! -f "$SMBPASSFN" ] || ! sudo grep -q "^$USER:" "$SMBPASSFN"; then
+        add_samba_user
+    fi
+    # interactively get scan device if not set in config file yet
+    [ -z "$SCAN_DEVICE" ] && get_scan_device
+    install_end_ts=$(date +%s) # measure elapsed time before user input
+}
+
 # scenario 1: called from anywhere: install us to scripts dir, git clone
 # scenario 2: called from scripts dir within git repo, git pull
 # scenario 3: called from scripts dir, no git repo
@@ -291,10 +297,6 @@ updateScripts()
     || [ "$(dirname "$SCRIPT_DIR")" != "$SCANBD_SCRIPTS" ]; then
         # assuming first time call on this system
         installPackages # install scanbd first
-        loadConfig
-        configSys
-        add_samba_user
-        get_scan_device
         # running this again later in stage2 but without interactive functions
     fi
     if [ ! -d "$SCANBD_DIR" ]; then # scanbd should be installed by now
@@ -303,7 +305,7 @@ updateScripts()
         exit 1
     fi
     if [ ! -d "$REPO_PATH" ]; then # create the repo if doesn't exist yet
-        sudo mkdir -p "$REPO_PATH" && sudo chown $(whoami) "$REPO_PATH"
+        sudo mkdir -p "$REPO_PATH" && sudo chown "$USER" "$REPO_PATH"
     fi
     cd "$REPO_PATH"
     local installScript="$REPO_PATH/install.sh"
@@ -322,7 +324,7 @@ install()
         echo "Please run $SCRIPT_PATH again."
         exit 1
     fi
-    loadConfig
+    loadConfig # this creates config file in repo dir if missing
     installPackages && configSys && (\
     echo
     echo " ## Installation done, enjoy! ##" )
