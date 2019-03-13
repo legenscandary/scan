@@ -71,12 +71,12 @@ installPackages()
 {
     echo " => Updating the system first:"
     echo
-    sudo apt update -y
-    sudo apt dist-upgrade -y
+    sudo apt-get update -y
+    sudo apt-get dist-upgrade -y
     echo
     echo " => Installing additional software packages for image processing and file server:"
     echo
-    sudo apt install -y git curl samba lockfile-progs imagemagick \
+    sudo apt-get install -y git curl samba lockfile-progs imagemagick \
         zbar-tools poppler-utils libtiff-tools scantailor sane-utils openbsd-inetd
     # get missing keys required for backports directly, dirmngr DNS is broken in this ver
     curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x7638D0442B90D010' \
@@ -104,7 +104,7 @@ b47a9c2339bcd0599b1328971661f58fca5a4b86014a17e31f458add64c71a38 *libconfuse2_3.
     echo
     [ -z "$DOC_LANG" ] && DOC_LANG="eng" # minimal language, updated from config file later
     tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
-    sudo apt install -y -t ${codename}-backports tesseract-ocr $tess_lang_packs
+    sudo apt-get install -y -t ${codename}-backports tesseract-ocr $tess_lang_packs
 }
 
 cfg()
