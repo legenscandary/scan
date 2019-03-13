@@ -524,13 +524,13 @@ main()
     source "$CFGPATH"
 
     # check for the correct user
-    if ! userExists; then
-        echo "Configured user '$USER' does not exist!"
+    if ! userExists "$SCANUSER"; then
+        echo "Configured user '$SCANUSER' does not exist!"
         runInstallFirst
         exit 1
     fi
-    if [ "$(whoami)" != "$USER" ]; then
-        echo "Wrong user, this script expects to be run by user '$USER'!"
+    if [ "$(whoami)" != "$SCANUSER" ]; then
+        echo "Wrong user, this script expects to be run by user '$SCANUSER'!"
         runInstallFirst
         exit 1
     fi

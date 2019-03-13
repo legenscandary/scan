@@ -34,7 +34,7 @@ loadConfig()
     # check for config file, if not existent, create one
     if [ ! -f "$CFGPATH" ]; then
         echo "Config file does not exist, creating one with default settings."
-        sudo mkdir -p "$(dirname "$CFGPATH")" && sudo chown "$USER" "$REPO_PATH"
+        sudo mkdir -p "$(dirname "$CFGPATH")" && sudo chown "$SCANUSER" "$REPO_PATH"
         cat > "$CFGPATH" <<EOF
 #
 # Legenscandary configuration
@@ -57,8 +57,8 @@ HEIGHT="500.0"
 # it is killed, assuming paper jam or similiar lock up
 SCANTIMEOUT=20
 # user to run as, set up during install
-USER=legenscandary
-# output directory, samba share, relative to \$USER home dir
+SCANUSER=legenscandary
+# output directory, samba share, relative to \$SCANUSER home dir
 OUT_SUBDIR=scans
 # samba workgroup
 SMB_WORKGROUP=WORKGROUP
@@ -186,7 +186,7 @@ EOF
 add_samba_user()
 {
     echo
-    echo "Please specify a password for newly created user '$USER'"\
+    echo "Please specify a password for newly created user '$SCANUSER'"\
          "in workgroup '$SMB_WORKGROUP'."
     echo "Use it to connect to the new windows network share"
     echo
@@ -194,11 +194,11 @@ add_samba_user()
     echo
     echo "where all scanned documents will be stored."
     echo
-    for num in seq 1 3; do sudo smbpasswd -L -a $USER && break; done
+    for num in seq 1 3; do sudo smbpasswd -L -a "$SCANUSER" && break; done
     echo
     echo " => To update the password later on, run:"
     echo
-    echo "    sudo smbpasswd -L -a $USER"
+    echo "    sudo smbpasswd -L -a $SCANUSER"
     echo "    sudo service smbd restart"
     echo
     sudo service smbd restart
@@ -212,7 +212,7 @@ get_scan_device()
     read -p "Please make sure the scanner is connected, press <enter> to continue:"
     sudo service scanbd stop
     # TODO: check scanimage output for multiple devices
-    local dev; dev="$(sudo -u $USER scanimage -f %d)"
+    local dev; dev="$(sudo -u "$SCANUSER" scanimage -f %d)"
     sudo service scanbd start
     if [ -z "$dev" ]; then
         echo " => No scanner found!"
@@ -224,7 +224,7 @@ get_scan_device()
     echo "Find it by running:"
     echo
     echo "    sudo service scanbd stop"
-    echo "    sudo -u $USER scanimage -L"
+    echo "    sudo -u $SCANUSER scanimage -L"
     echo "    sudo service scanbd start"
     echo
 }
@@ -233,13 +233,13 @@ configSys()
 {
     echo
     echo " => Configuring the system:"
-    if ! userExists "$USER"; then
-        echo " => Creating user '$USER' ..."
-        sudo adduser --system --ingroup scanner --disabled-login --shell=/bin/false $USER
-        sudo -u "$USER" sh -c "cd; mkdir $OUT_SUBDIR"
+    if ! userExists "$SCANUSER"; then
+        echo " => Creating user '$SCANUSER' ..."
+        sudo adduser --system --ingroup scanner --disabled-login --shell=/bin/false "$SCANUSER"
+        sudo -u "$SCANUSER" sh -c "cd; mkdir $OUT_SUBDIR"
     fi
     # assuming user exists now, create OUT_DIR
-    OUT_DIR="$(sudo -u "$USER" sh -c "cd;
+    OUT_DIR="$(sudo -u "$SCANUSER" sh -c "cd;
         mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
     echo " => Setting up scanbd ..."
     if [ ! -d "$SCANBD_DIR" ]; then
@@ -252,13 +252,13 @@ configSys()
     cat > "$tmpfn" <<EOF
 #!/bin/sh
 logger -t "scanbd: \$0" "Begin of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
-sudo -u $USER $SCRIPT_DIR/scan.sh
+sudo -u '$SCANUSER' $SCRIPT_DIR/scan.sh
 logger -t "scanbd: \$0" "End   of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
 EOF
     chmod 755 "$tmpfn"
     sudo mv "$tmpfn" "$scriptPath"
     sudo chown root.root "$scriptPath"
-    sudo chown -R "$USER" "$SCRIPT_DIR" # let the user own it who runs the script
+    sudo chown -R "$SCANUSER" "$SCRIPT_DIR" # let the user own it who runs the script
     # change default user to root in scanbd.conf
     # when set to user, script is run as root anyway from test.script, bug?
     sudo sed -i -e 's/^\(\s*user\s*=\s*\)\([a-z]\+\)/\1root/' "$SCANBD_DIR/scanbd.conf"
@@ -277,7 +277,7 @@ EOF
     sudo mv "$tmpfn" "$sambacfg"
     sudo chown root.root "$sambacfg"
     # create samba user if it does not exist yet
-    if [ ! -f "$SMBPASSFN" ] || ! sudo grep -q "^$USER:" "$SMBPASSFN"; then
+    if [ ! -f "$SMBPASSFN" ] || ! sudo grep -q "^$SCANUSER:" "$SMBPASSFN"; then
         add_samba_user
     fi
     # interactively get scan device if not set in config file yet
@@ -305,7 +305,7 @@ updateScripts()
         exit 1
     fi
     if [ ! -d "$REPO_PATH" ]; then # create the repo if doesn't exist yet
-        sudo mkdir -p "$REPO_PATH" && sudo chown "$USER" "$REPO_PATH"
+        sudo mkdir -p "$REPO_PATH" && sudo chown "$SCANUSER" "$REPO_PATH"
     fi
     cd "$REPO_PATH"
     local installScript="$REPO_PATH/install.sh"
