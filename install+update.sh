@@ -304,8 +304,9 @@ updateScripts()
              "it seems, scanbd could not be installed!"
         exit 1
     fi
-    if [ ! -d "$REPO_PATH" ]; then # create the repo if doesn't exist yet
-        sudo mkdir -p "$REPO_PATH" && sudo chown "$SCANUSER" "$REPO_PATH"
+    if [ ! -d "$REPO_PATH" ]; then # create the repo if doesn't exist yet,
+        # $SCANUSER is not known yet
+        sudo mkdir -p "$REPO_PATH" && sudo chown "$USER" "$REPO_PATH"
     fi
     cd "$REPO_PATH"
     local installScript="$REPO_PATH/install.sh"
