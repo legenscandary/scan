@@ -340,16 +340,27 @@ install()
         secs=$((secs-mins*60))
         echo " (took $mins min $secs sec to install)"; echo
     fi
+    # clean up log files, keep the most recent 5
+    local scriptName; scriptName="$(basename "$SCRIPT_PATH")"
+    (cd "$SCRIPT_DIR" && rm -f $(ls -1t "$scriptName"*.log | tail -n+5))
 }
 
-# if not set, remember start time of installation
-[ -z "$install_start_ts" ] && install_start_ts=$(date +%s)
+main()
+{
+    set +x # log script in debug mode
+    # if not set, remember start time of installation
+    [ -z "$install_start_ts" ] && install_start_ts=$(date +%s)
 
-if [ "$CMD" = stage2 ]; then
-    install_start_ts="$2" # get start time from previous invokation
-    install
-else
-    updateScripts
-fi
+    CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
+    if [ "$CMD" = stage2 ]; then
+        install_start_ts="$2" # get start time from previous invokation
+        install
+    else
+        updateScripts
+    fi
+}
+
+LOGFILE="${SCRIPT_PATH%.*}_$(date +%Y%m%d%H%M%S).log"
+main "$@" 2>&1 | tee "$LOGFILE"
 
 # vim: set ts=4 sts=4 sw=4 tw=0:
