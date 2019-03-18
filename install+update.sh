@@ -34,8 +34,9 @@ loadConfig()
     # check for config file, if not existent, create one
     if [ ! -f "$CFGPATH" ]; then
         echo "Config file does not exist, creating one with default settings."
-        sudo mkdir -p "$(dirname "$CFGPATH")" && sudo chown "$SCANUSER" "$REPO_PATH"
-        cat > "$CFGPATH" <<EOF
+        sudo mkdir -p "$(dirname "$CFGPATH")"
+        local tmpfn; tmpfn="$(mktemp)"
+        cat > "$tmpfn" <<EOF
 #
 # Legenscandary configuration
 #
@@ -64,8 +65,10 @@ OUT_SUBDIR=scans
 SMB_WORKGROUP=WORKGROUP
 
 EOF
+        sudo mv "$tmpfn" "$CFGPATH"
     fi
     source "$CFGPATH"
+    sudo chown -R "$SCANUSER.scanner" "$REPO_PATH"
 }
 
 installPackages()
