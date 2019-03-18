@@ -342,7 +342,7 @@ install()
     fi
     # clean up log files, keep the most recent 5
     local scriptName; scriptName="$(basename "$SCRIPT_PATH")"
-    (cd "$SCRIPT_DIR" && rm -f $(ls -1t "$scriptName"*.log | tail -n+5))
+    (cd "$SCRIPT_DIR" && rm -f $(ls -1t "${scriptName%*.sh}"*.log | tail -n+5))
 }
 
 main()
