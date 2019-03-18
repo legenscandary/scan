@@ -312,7 +312,8 @@ updateScripts()
         sudo mkdir -p "$REPO_PATH" && sudo chown "$USER" "$REPO_PATH"
     fi
     cd "$REPO_PATH"
-    local installScript="$REPO_PATH/install.sh"
+    local installScript="$REPO_PATH/$(basename "$SCRIPT_PATH")"
+
     if [ -d ".git" ]; then # a git repo yet, update scripts?
         git pull
     elif [ ! -f "$installScript" ]; then # empty dir possibly
