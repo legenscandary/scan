@@ -20,7 +20,6 @@ REPO_PATH="$SCANBD_SCRIPTS/legenscandary"
 CFGFN="scan.conf"
 CFGPATH="$REPO_PATH/$CFGFN"
 REPO_URL='https://github.com/legenscandary/scan.git'
-CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 SMBPASSFN="/etc/samba/smbpasswd"
 
 # tests if a user with the provided name exists
