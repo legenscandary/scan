@@ -66,6 +66,7 @@ SMB_WORKGROUP=WORKGROUP
 
 EOF
         sudo mv "$tmpfn" "$CFGPATH"
+        sudo chmod 644 "$CFGPATH"
     fi
     source "$CFGPATH"
     sudo chown -R "$SCANUSER.scanner" "$REPO_PATH"
