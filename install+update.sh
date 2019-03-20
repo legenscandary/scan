@@ -315,6 +315,11 @@ updateScripts()
     local installScript="$REPO_PATH/$(basename "$SCRIPT_PATH")"
 
     if [ -d ".git" ]; then # a git repo yet, update scripts?
+        # stash dirty work dir first
+        [ -z "$(git config user.name)" ] && git config user.name "$USER"
+        [ -z "$(git config user.email)" ] && git config user.email "$USER@$(hostname)"
+        git stash save
+        # update work dir
         git pull
     elif [ ! -f "$installScript" ]; then # empty dir possibly
         git clone $REPO_URL .
