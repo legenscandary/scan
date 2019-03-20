@@ -51,8 +51,8 @@ RESOLUTION=300
 WIDTH="221.121"
 HEIGHT="500.0"
 # max secs to wait for images from scanner, can be determined in test run
-# benchmark command: ts_start=$(date +%s); scanimage ... ; 
-# scan_time=$(expr $(date +%s)-$ts_start); echo "scan duration: $scan_time seconds"
+# benchmark command: ts_start=\$(date +%s); scanimage ... ;
+# scan_time=\$(expr \$(date +%s)-\$ts_start); echo "scan duration: \$scan_time seconds"
 # if there arrive no images within that time and scanimage is still running,
 # it is killed, assuming paper jam or similiar lock up
 SCANTIMEOUT=20
