@@ -68,7 +68,7 @@ EOF
         sudo chmod 644 "$CFGPATH"
     fi
     source "$CFGPATH"
-    sudo chown -R "$SCANUSER.scanner" "$REPO_PATH"
+    userExists "$SCANUSER" && sudo chown -R "$SCANUSER.scanner" "$REPO_PATH"
 }
 
 installPackages()
@@ -261,7 +261,7 @@ EOF
     chmod 755 "$tmpfn"
     sudo mv "$tmpfn" "$scriptPath"
     sudo chown root.root "$scriptPath"
-    sudo chown -R "$SCANUSER" "$SCRIPT_DIR" # let the user own it who runs the script
+    sudo chown -R "$SCANUSER.scanner" "$SCRIPT_DIR" # let the user own it who runs the script
     # change default user to root in scanbd.conf
     # when set to user, script is run as root anyway from test.script, bug?
     sudo sed -i -e 's/^\(\s*user\s*=\s*\)\([a-z]\+\)/\1root/' "$SCANBD_DIR/scanbd.conf"
