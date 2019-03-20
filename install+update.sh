@@ -221,7 +221,7 @@ get_scan_device()
         echo " => No scanner found!"
     else
         echo " => using '$dev'"
-        sed -i -e "s/\(SCANBD_DIR=\).*\$/\\1'$dev'/g" "$CFGPATH"
+        sudo sed -i -e "s/\(SCANBD_DIR=\).*\$/\\1'$dev'/g" "$CFGPATH"
     fi
     echo "The scanner can be changed later by updating the entry 'SCAN_DEVICE' in '$CFGPATH'."
     echo "Find it by running:"
