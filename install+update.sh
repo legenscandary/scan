@@ -205,8 +205,8 @@ get_scan_device()
     echo "Searching for the scanner to be used ..."
     read -r -p "Please make sure the scanner is connected, press <enter> to continue:"
     sudo service scanbd stop
-    # TODO: check scanimage output for multiple devices
-    local dev; dev="$(sudo -u "$SCANUSER" scanimage -f %d)"
+    # choose compatible scanner from scanimage output from multiple devices possibly
+    local dev; dev="$(sudo -u "$SCANUSER" scanimage -f '%d;' | grep -oE '[^;]*ScanSnap[^;]*')"
     sudo service scanbd start
     if [ -z "$dev" ]; then
         echo " => No scanner found!"
