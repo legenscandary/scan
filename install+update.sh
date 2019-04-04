@@ -83,13 +83,14 @@ installPackages()
     entry="$(grep 'sane-port.*saned$' $inetfn)"
     sudo update-inetd --remove sane-port
     tempdir="$(mktemp -d)"
-    cd "$tempdir"
-    curl -O http://ftp.debian.org/debian/pool/main/c/confuse/libconfuse-common_3.2.2+dfsg-1_all.deb
-    curl -O http://ftp.debian.org/debian/pool/main/c/confuse/libconfuse2_3.2.2+dfsg-1_armhf.deb
-    curl -O http://ftp.debian.org/debian/pool/main/s/scanbd/scanbd_1.5.1-4_armhf.deb
-    echo 'f1423d3de46e57df6b7b300972571d3b4edf18e7befcdbebb422388eea91086b *libconfuse-common_3.2.2+dfsg-1_all.deb
+    if cd "$tempdir"; then
+        curl -O http://ftp.debian.org/debian/pool/main/c/confuse/libconfuse-common_3.2.2+dfsg-1_all.deb
+        curl -O http://ftp.debian.org/debian/pool/main/c/confuse/libconfuse2_3.2.2+dfsg-1_armhf.deb
+        curl -O http://ftp.debian.org/debian/pool/main/s/scanbd/scanbd_1.5.1-4_armhf.deb
+        echo 'f1423d3de46e57df6b7b300972571d3b4edf18e7befcdbebb422388eea91086b *libconfuse-common_3.2.2+dfsg-1_all.deb
 b47a9c2339bcd0599b1328971661f58fca5a4b86014a17e31f458add64c71a38 *libconfuse2_3.2.2+dfsg-1_armhf.deb
-1fa024fa18243196227c963245395e1c321d4d6f14f4a4235fffffeb76c73339 *scanbd_1.5.1-4_armhf.deb' | sha256sum --strict -c && sudo dpkg --force-confdef -i *.deb
+1fa024fa18243196227c963245395e1c321d4d6f14f4a4235fffffeb76c73339 *scanbd_1.5.1-4_armhf.deb' | sha256sum --strict -c && sudo dpkg --force-confdef -i ./*.deb
+    fi
     sudo sh -c "(echo '$entry'; echo) >> '$inetfn'"
     sudo service scanbd restart
 
@@ -98,7 +99,7 @@ b47a9c2339bcd0599b1328971661f58fca5a4b86014a17e31f458add64c71a38 *libconfuse2_3.
     echo
     [ -z "$DOC_LANG" ] && DOC_LANG="eng" # minimal language, updated from config file later
     tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
-    sudo apt-get install -y -t ${codename}-backports tesseract-ocr $tess_lang_packs
+    sudo apt-get install -y -t "${codename}-backports" tesseract-ocr $tess_lang_packs
 }
 
 cfg()
@@ -187,7 +188,7 @@ add_samba_user()
     echo
     echo "where all scanned documents will be stored."
     echo
-    for num in seq 1 3; do sudo smbpasswd -L -a "$SCANUSER" && break; done
+    for _ in seq 1 3; do sudo smbpasswd -L -a "$SCANUSER" && break; done
     echo
     echo " => To update the password later on, run:"
     echo
@@ -202,7 +203,7 @@ get_scan_device()
 {
     echo
     echo "Searching for the scanner to be used ..."
-    read -p "Please make sure the scanner is connected, press <enter> to continue:"
+    read -r -p "Please make sure the scanner is connected, press <enter> to continue:"
     sudo service scanbd stop
     # TODO: check scanimage output for multiple devices
     local dev; dev="$(sudo -u "$SCANUSER" scanimage -f %d)"
@@ -313,8 +314,8 @@ updateScripts()
         # $SCANUSER is not known yet
         sudo mkdir -p "$REPO_PATH" && sudo chown "$USER" "$REPO_PATH"
     fi
-    cd "$REPO_PATH"
-    local installScript="$REPO_PATH/$(basename "$SCRIPT_PATH")"
+    cd "$REPO_PATH" || return
+    local installScript; installScript="$REPO_PATH/$(basename "$SCRIPT_PATH")"
 
     if [ -d ".git" ]; then # a git repo yet, update scripts?
         # stash dirty work dir first
@@ -326,10 +327,10 @@ updateScripts()
     elif [ ! -f "$installScript" ]; then # empty dir possibly
         git clone $REPO_URL .
     fi
-    $installScript stage2 $install_start_ts
+    $installScript stage2 "$install_start_ts"
 }
 
-install()
+installme()
 {
     if ! cd "$REPO_PATH"; then
         echo "Could not change to directory '$REPO_PATH'!"
@@ -361,7 +362,7 @@ main()
     CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
     if [ "$CMD" = stage2 ]; then
         install_start_ts="$2" # get start time from previous invokation
-        install
+        installme
     else
         updateScripts
     fi
