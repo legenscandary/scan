@@ -261,6 +261,18 @@ EOF
     sudo systemctl daemon-reload
     sudo service scanbd restart
 
+    # add a daily cron job for the update script
+    tmpfn="$(mktemp)"
+    cat > "$tmpfn" <<EOF
+#!/bin/sh
+# update the legenscandary scripts, possibly
+$SCRIPT_PATH
+EOF
+    chmod 755 "$tmpfn"
+    local cronPath="/etc/cron.daily/legenscandary"
+    sudo mv "$tmpfn" "$cronPath"
+    sudo chown root.root "$cronPath"
+
     # configure samba with a share for the OUT_DIR
     echo " => Configuring the samba file server:"
     echo
