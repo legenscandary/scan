@@ -1,15 +1,5 @@
 #!/bin/bash
 #
-# run this script like this to test for correct file permissions:
-# sudo -u saned /etc/scanbuttond/scan.sh
-#
-# TODO:
-# - on reset/restart, remove queue
-# - unlock scan button earlier
-# - analysis: somehow eliminate empty space, match against (known) words?
-
-# add a way to reset on scanner jamming:
-# killall scanimage; kill $(ps ax | grep 'scanbuttond/.*\.sh' | grep -v ' grep' | awk '{print $1}'); rm -f "$(ls -1dt /home/scans/scans/work/scan_* | head -n1)"/*.tif; touch "$(ls -1dt /home/scans/scans/work/scan_* | head -n1)"/done
 
 # set up some paths
 SCRIPT_PATH="$(readlink -f "$0")"
