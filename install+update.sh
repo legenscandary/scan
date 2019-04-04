@@ -282,13 +282,14 @@ EOF
     configSamba > "$tmpfn"
     sudo mv "$tmpfn" "$sambacfg"
     sudo chown root.root "$sambacfg"
+    # measure elapsed time before user input
+    install_end_ts=$(date +%s)
     # create samba user if it does not exist yet
     if [ ! -f "$SMBPASSFN" ] || ! sudo grep -q "^$SCANUSER:" "$SMBPASSFN"; then
         add_samba_user
     fi
     # interactively get scan device if not set in config file yet
     [ -z "$SCAN_DEVICE" ] && get_scan_device
-    install_end_ts=$(date +%s) # measure elapsed time before user input
 }
 
 # scenario 1: called from anywhere: install us to scripts dir, git clone
