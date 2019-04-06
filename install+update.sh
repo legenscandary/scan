@@ -282,7 +282,11 @@ EOF
     sudo sed -i -e 's/^\(\s*user\s*=\s*\)\([a-z]\+\)/\1root/' "$SCANBD_DIR/scanbd.conf"
     # restart scanbd automatically on exit/segfault
     sudo sed -i -e '/\[Service\]/ aRestart=always' \
-                -e '/\[Service\]/ aRestartSec=5' "/lib/systemd/system/scanbd.service"
+                -e '/\[Service\]/ aRestartSec=5' \
+                -e 's/\(^Also.\+scanbm.socket\)/#\1/g' \
+                   "/lib/systemd/system/scanbd.service"
+    sudo systemctl stop scanbm.socket
+    sudo systemctl disable scanbm.socket
     sudo systemctl daemon-reload
     sudo service scanbd restart
     # disable conflicting inetd config
