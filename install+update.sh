@@ -37,8 +37,6 @@ loadConfig()
 #
 # Changes get active by executing $SCRIPT_PATH
 
-# sane device to be used
-SCAN_DEVICE=
 # tesseract OCR languages
 DOC_LANG="deu+eng"
 # default scan resolution, same resolution goes to OCR
@@ -203,31 +201,6 @@ add_samba_user()
     sudo service smbd restart
 }
 
-# interactive function for determining the scanner device
-get_scan_device()
-{
-    echo
-    echo "Searching for the scanner to be used ..."
-    read -r -p "Please make sure the scanner is connected, press <enter> to continue:"
-    sudo service scanbd stop
-    # choose compatible scanner from scanimage output from multiple devices possibly
-    local dev; dev="$(sudo -u "$SCANUSER" sh -c "SANE_CONFIG_DIR=$SCANBD_DIR scanimage -f '%d;'" | grep -oE '[^;]*ScanSnap[^;]*')"
-    sudo service scanbd start
-    if [ -z "$dev" ]; then
-        echo " => No scanner found!"
-    else
-        echo " => using '$dev'"
-        sudo sed -i -e "s/\(SCAN_DEVICE=\).*\$/\\1'net:localhost:$dev'/g" "$CFGPATH"
-    fi
-    echo "The scanner can be changed later by updating the entry 'SCAN_DEVICE' in '$CFGPATH'."
-    echo "Find it by running:"
-    echo
-    echo "    sudo service scanbd stop"
-    echo "    sudo -u $SCANUSER scanimage -L"
-    echo "    sudo service scanbd start"
-    echo
-}
-
 configSys()
 {
     local tmpfn
@@ -271,7 +244,7 @@ configSys()
     cat > "$tmpfn" <<EOF
 #!/bin/sh
 logger -t "scanbd: \$0" "Begin of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
-sudo -u '$SCANUSER' $SCRIPT_DIR/scan.sh
+sudo -u '$SCANUSER' $SCRIPT_DIR/scan.sh "\$SCANBD_DEVICE"
 logger -t "scanbd: \$0" "End   of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
 EOF
     chmod 755 "$tmpfn"
@@ -321,8 +294,6 @@ EOF
     if [ ! -f "$SMBPASSFN" ] || ! sudo grep -q "^$SCANUSER:" "$SMBPASSFN"; then
         add_samba_user
     fi
-    # interactively get scan device if not set in config file yet
-    [ -z "$SCAN_DEVICE" ] && get_scan_device
 }
 
 # scenario 1: called from anywhere: install us to scripts dir, git clone

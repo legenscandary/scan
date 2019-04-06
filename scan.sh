@@ -16,6 +16,7 @@ SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 CFGFN="scan.conf"
 CFGPATH="$SCRIPT_DIR/$CFGFN"
+SCAN_DEVICE="$1" # first argument can be a scan device or a command
 CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 SCAN_PREFIX="scan"
 # command to replace illegal file name chars (Windows) by underscore (renameByContent())
@@ -406,7 +407,7 @@ batchScan()
         echo "Error: scanning already in progress!"
         exit
     fi;
-    echo " batchScan '$*' started on dev '$DEVICE_NAME'"
+    echo " batchScan '$*' started on dev '$SCAN_DEVICE'"
     SCAN_DIR="$(getTmpDir "$PREFIX")"
     cd "$SCAN_DIR" || return
     echo "
@@ -415,7 +416,7 @@ batchScan()
     PATTERN="${PREFIX}_%03d.tif"
     # always scanning both side of a sheet, 2 images/sheet
     (scanimage \
-            -d "$DEVICE_NAME" \
+            -d "$SCAN_DEVICE" \
             --source 'ADF Duplex' \
             --mode Color \
             --resolution $RESOLUTION \
@@ -548,16 +549,16 @@ main()
     LOG_DIR="$OUT_DIR/log"
     TIMESTAMPFN="$(mktemp)"
 
-    if [ -z "$CMD" ]; then
+    if [ "$CMD" = "sheets" ]; then
+        # for any arguments provided, create available qr command sheets
+        eval createCommandSheets "$(timestamp command-sheets)"
+    else
         eval batchScan "$(timestamp $SCAN_PREFIX)"
         # do not wait, this would include processing of all documents as well
         # wait # for all children
         chmod -fR a+rx "$OUT_DIR"/*
         # do not remove the queue, next batch scan will append jobs
         # delIntermediate || rm -f "$QUEUEFN"
-    else
-        # for any arguments provided, create available qr command sheets
-        eval createCommandSheets "$(timestamp command-sheets)"
     fi
 
     # remove timestamp file, if any
