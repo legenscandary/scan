@@ -143,7 +143,7 @@ configSamba()
     content="$(cfg "server string" "Scan Server" "workgroup")"
     content="$(cfg "server role" "standalone server" "server string")"
     local devs; devs="$(/sbin/ifconfig | \
-                         awk -F':' '/^[^[:space:]:]+/ { ORS=" "; print $1 }')"
+                         awk -F':' '/^[a-zA-Z0-9]/ { ORS=" "; print $1 }')"
     content="$(cfg "dns proxy" no "server role")"
     content="$(cfg "interfaces" "$devs" "dns proxy")"
     content="$(cfg "bind interfaces only" yes "interfaces")"
