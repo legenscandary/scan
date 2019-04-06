@@ -220,6 +220,7 @@ get_scan_device()
 
 configSys()
 {
+    local tmpfn
     echo
     echo " => Configuring the system:"
     if ! userExists "$SCANUSER"; then
@@ -230,6 +231,17 @@ configSys()
     # assuming user exists now, create OUT_DIR
     OUT_DIR="$(sudo -u "$SCANUSER" sh -c "cd;
         mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
+    # configure sane, let it use the net backend only, in favor of scanbd/scanbm
+    if cd /etc/sane.d/; then
+        sudo mkdir dll.disabled && sudo mv dll.d/* dll.disabled/
+        sudo mv dll.conf dll.disabled.conf
+        sudo sh -c 'echo net > dll.conf'
+        local netcfgfn="net.conf" # configure net-backend
+        sudo sh -c "echo '## configuration by legenscandary:' >> $netcfgfn"
+        sudo sh -c "echo 'connect_timeout = 3' >> $netcfgfn"
+        sudo sh -c "echo 'localhost' >> $netcfgfn"
+    fi
+    # configure scanbd
     echo " => Setting up scanbd ..."
     if [ ! -d "$SCANBD_DIR" ]; then
         echo "scanbd config path '$SCANBD_DIR' not found!"
