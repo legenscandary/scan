@@ -76,7 +76,7 @@ installPackages()
     echo " => Installing additional software packages for image processing and file server:"
     echo
     sudo apt-get install -y git curl samba lockfile-progs imagemagick \
-        zbar-tools poppler-utils libtiff-tools scantailor sane-utils
+        zbar-tools poppler-utils libtiff-tools scantailor sane-utils openbsd-inetd
 
     # install latest scanbd 1.5.1
     tempdir="$(mktemp -d)"
