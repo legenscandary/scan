@@ -242,7 +242,7 @@ configSys()
         mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
     # configure sane, let it use the net backend only, in favor of scanbd/scanbm
     if cd /etc/sane.d/; then
-        if [ -n "$(find dll.d -type d -empty)" ]; then
+        if [ -z "$(find dll.d -type d -empty)" ]; then
             # move external sane config files somewhere else if there are any
             sudo mkdir -p dll.disabled && sudo mv dll.d/* dll.disabled/
         fi
