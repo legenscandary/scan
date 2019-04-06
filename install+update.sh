@@ -210,13 +210,13 @@ get_scan_device()
     read -r -p "Please make sure the scanner is connected, press <enter> to continue:"
     sudo service scanbd stop
     # choose compatible scanner from scanimage output from multiple devices possibly
-    local dev; dev="$(sudo -u "$SCANUSER" scanimage -f '%d;' | grep -oE '[^;]*ScanSnap[^;]*')"
+    local dev; dev="$(sudo -u "$SCANUSER" sh -c "SANE_CONFIG_DIR=$SCANBD_DIR scanimage -f '%d;'" | grep -oE '[^;]*ScanSnap[^;]*')"
     sudo service scanbd start
     if [ -z "$dev" ]; then
         echo " => No scanner found!"
     else
         echo " => using '$dev'"
-        sudo sed -i -e "s/\(SCAN_DEVICE=\).*\$/\\1'$dev'/g" "$CFGPATH"
+        sudo sed -i -e "s/\(SCAN_DEVICE=\).*\$/\\1'net:localhost:$dev'/g" "$CFGPATH"
     fi
     echo "The scanner can be changed later by updating the entry 'SCAN_DEVICE' in '$CFGPATH'."
     echo "Find it by running:"
