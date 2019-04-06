@@ -72,12 +72,7 @@ installPackages()
     echo
     sudo apt-get install -y git curl samba lockfile-progs imagemagick \
         zbar-tools poppler-utils libtiff-tools scantailor sane-utils
-    # get missing keys required for backports directly, dirmngr DNS is broken in this ver
-    curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x7638D0442B90D010' \
-        | sudo apt-key add -
-    codename="$(lsb_release -cs)"
-    sudo sh -c "echo 'deb https://deb.debian.org/debian ${codename}-backports main contrib non-free' > /etc/apt/sources.list.d/debian-backports.list"
-    sudo apt-get update -y
+
     # install latest scanbd 1.5.1
     tempdir="$(mktemp -d)"
     if cd "$tempdir"; then
@@ -88,6 +83,13 @@ installPackages()
 b47a9c2339bcd0599b1328971661f58fca5a4b86014a17e31f458add64c71a38 *libconfuse2_3.2.2+dfsg-1_armhf.deb
 1fa024fa18243196227c963245395e1c321d4d6f14f4a4235fffffeb76c73339 *scanbd_1.5.1-4_armhf.deb' | sha256sum --strict -c && sudo dpkg --force-confdef -i ./*.deb
     fi
+
+    # get missing keys required for backports directly, dirmngr DNS is broken in this ver
+    curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x7638D0442B90D010' \
+        | sudo apt-key add -
+    codename="$(lsb_release -cs)"
+    sudo sh -c "echo 'deb https://deb.debian.org/debian ${codename}-backports main contrib non-free' > /etc/apt/sources.list.d/debian-backports.list"
+    sudo apt-get update -y
 
     echo
     echo " => Installing selected OCR packages:"
