@@ -72,10 +72,12 @@ installPackages()
     echo
     sudo apt-get install -y git curl samba lockfile-progs imagemagick \
         zbar-tools poppler-utils libtiff-tools scantailor sane-utils
+    sudo update-inetd --disable sane-port # inetd not needed, all handled by systemd
 
     # install latest scanbd 1.5.1
     tempdir="$(mktemp -d)"
     if cd "$tempdir"; then
+        export DEBIAN_FRONTEND=noninteractive
         curl -O http://ftp.debian.org/debian/pool/main/c/confuse/libconfuse-common_3.2.2+dfsg-1_all.deb
         curl -O http://ftp.debian.org/debian/pool/main/c/confuse/libconfuse2_3.2.2+dfsg-1_armhf.deb
         curl -O http://ftp.debian.org/debian/pool/main/s/scanbd/scanbd_1.5.1-4_armhf.deb
