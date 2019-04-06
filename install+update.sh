@@ -243,13 +243,18 @@ configSys()
         mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
     # configure sane, let it use the net backend only, in favor of scanbd/scanbm
     if cd /etc/sane.d/; then
-        sudo mkdir dll.disabled && sudo mv dll.d/* dll.disabled/
-        sudo mv dll.conf dll.disabled.conf
+        if [ -n "$(find dll.d -type d -empty)" ]; then
+            # move external sane config files somewhere else if there are any
+            sudo mkdir -p dll.disabled && sudo mv dll.d/* dll.disabled/
+        fi
+        # make sure only the net backend is enabled in sane config, disable original config
+        [ -z "$(grep -v net dll.conf | tr -d [:space:])" ] || sudo mv dll.conf "dll.disabled_$(getts).conf"
         sudo sh -c 'echo net > dll.conf'
+        # configure sanes net backend, make sure required settings are present
         local netcfgfn="net.conf" # configure net-backend
-        sudo sh -c "echo '## configuration by legenscandary:' >> $netcfgfn"
-        sudo sh -c "echo 'connect_timeout = 3' >> $netcfgfn"
-        sudo sh -c "echo 'localhost' >> $netcfgfn"
+        grep -q legenscandary "$netcfgfn" || sudo sh -c "echo '## configuration by legenscandary:' >> $netcfgfn"
+        grep -q '^connect_timeout' "$netcfgfn" || sudo sh -c "echo 'connect_timeout = 3' >> $netcfgfn"
+        grep -q '^localhost' "$netcfgfn" || sudo sh -c "echo 'localhost' >> $netcfgfn"
     fi
     # configure scanbd
     echo " => Setting up scanbd ..."
