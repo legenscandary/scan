@@ -69,7 +69,8 @@ EOF
 
 installPackages()
 {
-    echo " => Updating the system first:"
+    echo
+    echo " => Updating system packages:"
     echo
     sudo apt-get update -y
     sudo apt-get dist-upgrade -y
