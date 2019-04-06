@@ -18,6 +18,12 @@ userExists()
     id -u "$1" > /dev/null 2>&1
 }
 
+# generates a timestamp for use in file names
+getts()
+{
+    date +%Y%m%d%H%M%S
+}
+
 loadConfig()
 {
     # check for config file, if not existent, create one
@@ -289,7 +295,7 @@ EOF
     echo " => Configuring the samba file server:"
     echo
     sambacfg="/etc/samba/smb.conf"
-    sudo mv "$sambacfg" "$sambacfg.bckp_$(date +%Y%m%d%H%M%S)"
+    sudo mv "$sambacfg" "$sambacfg.bckp_$(getts)"
     configSamba > "$tmpfn"
     sudo mv "$tmpfn" "$sambacfg"
     sudo chown root.root "$sambacfg"
@@ -380,7 +386,7 @@ main()
     fi
 }
 
-LOGFILE="${SCRIPT_PATH%.*}_$(date +%Y%m%d%H%M%S).log"
+LOGFILE="${SCRIPT_PATH%.*}_$(getts).log"
 main "$@" 2>&1 | tee "$LOGFILE"
 
 # vim: set ts=4 sts=4 sw=4 tw=0:
