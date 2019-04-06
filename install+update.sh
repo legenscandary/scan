@@ -78,7 +78,6 @@ installPackages()
     echo
     sudo apt-get install -y git curl samba lockfile-progs imagemagick \
         zbar-tools poppler-utils libtiff-tools scantailor sane-utils
-    sudo update-inetd --disable sane-port # inetd not needed, all handled by systemd
 
     # install latest scanbd 1.5.1
     tempdir="$(mktemp -d)"
@@ -283,6 +282,10 @@ EOF
                 -e '/\[Service\]/ aRestartSec=5' "/lib/systemd/system/scanbd.service"
     sudo systemctl daemon-reload
     sudo service scanbd restart
+    # disable conflicting inetd config
+    sudo update-inetd --disable sane-port # inetd not needed, all handled by systemd
+    sudo service inetd restart
+    sudo systemctl restart scanbm.socket
 
     # add a daily cron job for the update script
     tmpfn="$(mktemp)"
