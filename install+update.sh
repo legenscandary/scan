@@ -261,6 +261,9 @@ configSys()
         echo "scanbd config path '$SCANBD_DIR' not found!"
         return 1
     fi
+       # create dummy saned config for scanbd to prevent warning msg
+    [ -f "$SCANBD_DIR/saned.conf" ] || sudo touch "$SCANBD_DIR/saned.conf"
+    # create script to be called on button press
     local scriptPath="$SCANBD_SCRIPTS/test.script"
     sudo mkdir -p "$SCANBD_SCRIPTS"
     tmpfn="$(mktemp)"
