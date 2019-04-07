@@ -289,6 +289,7 @@ processDoc() {
     DOC_DIR="$1"
     PREFIX="$2"
     TS="$3"
+    [ -z "$DOC_DIR" ] && return # ignore missing doc dir, happens on startup
     STARTTIME=$(date +%s)
     echo "processDoc $*"
     # check if given document exists
@@ -431,6 +432,7 @@ batchScan()
     IDX=1
     LASTSCANTIME=$(date +%s)
     CURRENT_MODE=single
+    local DOC_DIR=""
     # wait max $SCANTIMEOUT seconds for scanned images files to show up
     while [ "$(($(date +%s)-LASTSCANTIME))" -lt $SCANTIMEOUT ];
     do
@@ -452,28 +454,37 @@ batchScan()
         echo " waiting for classifyImg PIDs: $FN1PID $FN2PID"
         wait $FN1PID $FN2PID
 
-        # on mode switch create new temp dir, move there all files
-        if [ -f "$FN1.single" ] || [ -f "$FN2.single" ]; then
-            CURRENT_MODE=single
-            rm -f "$FN1" "$FN2" # remove scans of mode sheet
-        elif [ -f "$FN1.multi" ] || [ -f "$FN2.multi" ]; then
+        # on mode switch create new doc dir, move there all files
+        if [ -f "$FN1.multi" ] || [ -f "$FN2.multi" ]; then
             CURRENT_MODE=multi
             rm -f "$FN1" "$FN2" # remove scans of mode sheet
-            # in multi mode: create a new document on mode switch only
-            [ -z "$DOC_DIR" ] || eval processDoc "$DOC_DIR" "$(timestamp doc)" &
+            # TODO: check for empty DOC_DIR and skip possibly
+            # queue processing of the previous document
+            eval processDoc "$DOC_DIR" "$(timestamp doc)" &
+            # create a new document on mode switch
             DOC_DIR="$(getTmpDir doc)"
-        fi;
-        rm -f ./*.single ./*.multi ./*.blank
-        # in single mode: always create a new document for every two pages
-        if [ "$CURRENT_MODE" == single ] && [ -z "$DOC_DIR" ]; then
-            DOC_DIR="$(getTmpDir doc)"
+        elif [ -f "$FN1.single" ] || [ -f "$FN2.single" ]; then
+            rm -f "$FN1" "$FN2" # remove scans of mode sheet
+            # process previous multi sheet doc possibly
+            if [ "$CURRENT_MODE" != single ]; then
+                eval processDoc "$DOC_DIR" "$(timestamp doc)" &
+                DOC_DIR="$(getTmpDir doc)"
+            fi
+            CURRENT_MODE=single
         fi
-        # move scanned images to appropriate document directory
+        # create new doc dir on first run, later it is set after start of processing
+        [ -z "$DOC_DIR" ] && DOC_DIR="$(getTmpDir doc)"
+        rm -f ./*.single ./*.multi ./*.blank
+        # move scanned images to current document dir
         if [ -f "$FN1" ] || [ -f "$FN2" ]; then
             echo " -> $CURRENT_MODE mode, moving $(ls "$FN1" "$FN2" 2> /dev/null) to '$DOC_DIR'."
             mv -f "$FN1" "$FN2" "$DOC_DIR" 2> /dev/null
+            # process directly after copying in single mode
+            if [ "$CURRENT_MODE" == single ]; then
+                eval processDoc "$DOC_DIR" "$(timestamp doc)" &
+                DOC_DIR="$(getTmpDir doc)"
+            fi
         fi
-        [ "$CURRENT_MODE" == single ] && eval processDoc "$DOC_DIR" "$(timestamp doc)" &
         
         ls -1; # show directory contents in log file
         IDX=$((IDX+2))
@@ -487,8 +498,8 @@ batchScan()
     # kill $(ps ax | grep "$scriptDir/.*\\.sh" | grep -v ' grep' \
     #              | awk '{print $1}')
 
-    # process the last multi document
-    [ "$CURRENT_MODE" == multi ] && [ ! -z "$DOC_DIR" ] && eval processDoc "$DOC_DIR" "$(timestamp doc)" &
+    # process the last multi document, after timeout of scanning loop
+    [ "$CURRENT_MODE" == multi ] && eval processDoc "$DOC_DIR" "$(timestamp doc)" &
 
     sleep 2
     # directory empty, remove it
