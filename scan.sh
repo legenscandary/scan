@@ -114,19 +114,19 @@ classifyImg() {
     TMPFN=$(mktemp --tmpdir="$(pwd)" "test_XXXXXXXX.tif")
     chmod a+rx "$TMPFN"
 
-    RATIO=0.14
-    PIXCOUNT=$(convert "$INFN" -format "%[fx:w*h]" info:)
-    PIXCOUNT=$(python -c "print(int($PIXCOUNT))")
-    # calculate target pixel count, approx. 1M for 300dpi
-    PIXCOUNT_A4=$(python -c "print(int(($RESOLUTION*210./25.4) * ($RESOLUTION*297./25.4) * $RATIO))")
+    RATIO=0.14 # percentage of nominal pixel count of an A4 page to keep
+    # get pixel count in given image
+    PIXCOUNT="$(convert "$INFN" -format "%[fx:w*h]" info:)"
+    PIXCOUNT="$(python -c "print(int($PIXCOUNT))")"
+    # calculate target pixel count, approx. 1.2M for 300dpi
+    PIXCOUNT_A4=1200000 # always same number, calculus below for reference
+    [ -z "$PIXCOUNT_A4" ] && PIXCOUNT_A4="$(python -c "print(int(
+        ($RESOLUTION*210./25.4) * ($RESOLUTION*297./25.4) * $RATIO))")"
     RESIZECMD=""
-    echo "$INFN: pix count: $PIXCOUNT, target: $PIXCOUNT_A4"
-    if [ ! -z "$PIXCOUNT" ] && [ ! -z "$PIXCOUNT_A4" ] && [ "$PIXCOUNT" -gt "$PIXCOUNT_A4" ]; then
+    if [ ! -z "$PIXCOUNT" ] && [ ! -z "$PIXCOUNT_A4" ] \
+        && [ "$PIXCOUNT" -gt "$PIXCOUNT_A4" ]; then
         RESIZECMD="-resize $PIXCOUNT_A4@"
-        echo "$INFN -> resizing by '$RESIZECMD'"
-    else
-        echo "$INFN -> ok."
-    fi;
+    fi
 
     convert "$INFN" -shave 10%x5% $RESIZECMD -blur 3x1.5 -threshold 20% \
         -fuzz 10% -trim +repage "$TMPFN"
