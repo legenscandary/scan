@@ -127,14 +127,18 @@ classifyImg() {
         && [ "$PIXCOUNT" -gt "$PIXCOUNT_A4" ]; then
         RESIZECMD="-resize $PIXCOUNT_A4@"
     fi
-
-    convert "$INFN" -shave 10%x5% $RESIZECMD -blur 3x1.5 -threshold 20% \
-        -fuzz 10% -trim +repage "$TMPFN"
+    # https://www.imagemagick.org/Usage/crop/#trim_blur
+    # https://superuser.com/a/1257643
+    PIXCOUNT_LEFT="$(convert "$INFN" -shave 8%x5% $RESIZECMD \
+        -virtual-pixel White -blur 0x10 -fuzz 15% -trim \
+        -format "%[fx:w*h]" info: 2> /dev/null)"
+    #convert "$INFN" -shave 10%x5% $RESIZECMD -blur 3x1.5 -threshold 20% \
+    #    -fuzz 10% -trim +repage "$TMPFN"
     # old setting had probs with thin paper, text shining through
     # TME invoice Feb-2014
     # convert "$INFN" -shave 4%x4% $RESIZECMD -threshold 10% \
     #    -fuzz 20% -trim +repage $TMPFN 2> /dev/null
-    PIXCOUNT_LEFT=$(convert "$TMPFN" -format "%[fx:w*h]" info:)
+#    PIXCOUNT_LEFT=$(convert "$TMPFN" -format "%[fx:w*h]" info:)
     PIXCOUNT_LEFT=$(python -c "print(int($PIXCOUNT_LEFT))")
     echo -n "$INFN: Test img pix count left: '$PIXCOUNT_LEFT' -> "
     if [ ! -z "$PIXCOUNT_LEFT" ] && [ "$PIXCOUNT_LEFT" -lt 100 ]; then
