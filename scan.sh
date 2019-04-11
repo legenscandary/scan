@@ -135,28 +135,25 @@ classifyImg()
         -virtual-pixel White -blur 0x10 -fuzz 15% -trim \
         +repage "$TMPFN" 2> /dev/null
     PIXCOUNT_LEFT="$(convert "$TMPFN" -format "%[fx:w*h]" info:)"
-    #convert "$INFN" -shave 10%x5% $RESIZECMD -blur 3x1.5 -threshold 20% \
-    #    -fuzz 10% -trim +repage "$TMPFN"
-    # old setting had probs with thin paper, text shining through
-    # TME invoice Feb-2014
-    # convert "$INFN" -shave 4%x4% $RESIZECMD -threshold 10% \
-    #    -fuzz 20% -trim +repage $TMPFN 2> /dev/null
-#    PIXCOUNT_LEFT=$(convert "$TMPFN" -format "%[fx:w*h]" info:)
     PIXCOUNT_LEFT=$(python -c "print(int($PIXCOUNT_LEFT))")
-    echo -n "$INFN: Test img pix count left: '$PIXCOUNT_LEFT' -> "
     local move="mv"
+    printf "%s: Test img pix count: %d -> " "$INFN" "$PIXCOUNT_LEFT"
     if [ ! -z "$PIXCOUNT_LEFT" ] && [ "$PIXCOUNT_LEFT" -lt 100 ]; then
         # with less than 100 pix left, it's blank
 #    if (convert $TMPFN info: | grep -q '1x1'); then
-        echo "blank"
+        printf "blank\n"
         $move "$INFN" "$INFN.blank"
     else
-        echo "checking for command code"
+        printf "command code? "
         MODE="$(zbarimg -q --raw "$TMPFN")"
         if [ "$MODE" == "multi" ]; then
             $move "$INFN" "$INFN.multi"
+            printf "multi!\n"
         elif [ "$MODE" == "single" ]; then
             $move "$INFN" "$INFN.single"
+            printf "single!\n"
+        else
+            printf "nope\n"
         fi;
     fi;
     rm -f "$TMPFN"
