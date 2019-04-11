@@ -108,9 +108,11 @@ createCommandSheets() {
         "Jedes folgende Blatt wird ein einzelnes Dokument.";
 }
 
-classifyImg() {
+classifyImg()
+{
     echo "classifyImg $*"
     INFN="$1"
+    [ -f "$INFN" ] || return
     TMPFN=$(mktemp --tmpdir="$(pwd)" "test_XXXXXXXX.tif")
     chmod a+rx "$TMPFN"
 
@@ -367,7 +369,8 @@ processDoc() {
     kill -CONT "$(queueHead)"
 }
 
-removeDeskewArtifacts() {
+removeDeskewArtifacts()
+{
     FN="$1"
     XMAX="$(convert -format "%[fx:w-1]" "$FN" info:)"
     YMAX="$(convert -format "%[fx:h-1]" "$FN" info:)"
