@@ -131,7 +131,7 @@ classifyImg()
     fi
     # https://www.imagemagick.org/Usage/crop/#trim_blur
     # https://superuser.com/a/1257643
-    PIXCOUNT_LEFT="$(convert "$INFN" -shave 8%x5% $RESIZECMD \
+    PIXCOUNT_LEFT="$(convert "$INFN" $RESIZECMD -shave 8%x5% \
         -virtual-pixel White -blur 0x10 -fuzz 15% -trim \
         -format "%[fx:w*h]" info: 2> /dev/null)"
     #convert "$INFN" -shave 10%x5% $RESIZECMD -blur 3x1.5 -threshold 20% \
