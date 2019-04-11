@@ -143,18 +143,19 @@ classifyImg()
 #    PIXCOUNT_LEFT=$(convert "$TMPFN" -format "%[fx:w*h]" info:)
     PIXCOUNT_LEFT=$(python -c "print(int($PIXCOUNT_LEFT))")
     echo -n "$INFN: Test img pix count left: '$PIXCOUNT_LEFT' -> "
+    local move="mv"
     if [ ! -z "$PIXCOUNT_LEFT" ] && [ "$PIXCOUNT_LEFT" -lt 100 ]; then
         # with less than 100 pix left, it's blank
 #    if (convert $TMPFN info: | grep -q '1x1'); then
         echo "blank"
-        mv "$INFN" "$INFN.blank"
+        $move "$INFN" "$INFN.blank"
     else
         echo "checking for command code"
         MODE="$(zbarimg -q --raw "$TMPFN")"
         if [ "$MODE" == "multi" ]; then
-            mv "$INFN" "$INFN.multi"
+            $move "$INFN" "$INFN.multi"
         elif [ "$MODE" == "single" ]; then
-            mv "$INFN" "$INFN.single"
+            $move "$INFN" "$INFN.single"
         fi;
     fi;
     rm -f "$TMPFN"
