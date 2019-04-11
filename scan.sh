@@ -108,6 +108,8 @@ createCommandSheets() {
         "Jedes folgende Blatt wird ein einzelnes Dokument.";
 }
 
+# decide if a scanned page is blank (it won't be entirely @255)
+# check for a command sheet with QR code on it and interpret it
 classifyImg()
 {
     echo "classifyImg $*"
@@ -135,7 +137,7 @@ classifyImg()
         -virtual-pixel White -blur 0x10 -fuzz 15% -trim \
         +repage "$tmpfn" 2> /dev/null
     pixcount="$(convert "$tmpfn" -format "%[fx:w*h]" info:)"
-    pixcount=$(python -c "print(int($pixcount))")
+    pixcount="$(python -c "print(int($pixcount))")"
     printf "%s: Test img pix count: %d -> " "$infn" "$pixcount"
     local move="mv"
     if [ ! -z "$pixcount" ] && [ "$pixcount" -lt 100 ]; then
