@@ -111,46 +111,45 @@ createCommandSheets() {
 classifyImg()
 {
     echo "classifyImg $*"
-    INFN="$1"
-    [ -f "$INFN" ] || return
-    TMPFN=$(mktemp --tmpdir="$(pwd)" "test_XXXXXXXX.tif")
-    chmod a+rx "$TMPFN"
+    local infn="$1"
+    [ -f "$infn" ] || return
+    local tmpfn; tmpfn=$(mktemp --tmpdir="$(pwd)" "test_XXXXXXXX.tif")
+    chmod a+rx "$tmpfn"
 
-    RATIO=0.14 # percentage of nominal pixel count of an A4 page to keep
+    local testRatio=0.14 # percentage of nominal pixel count of an A4 page to keep
     # get pixel count in given image
-    PIXCOUNT="$(convert "$INFN" -format "%[fx:w*h]" info:)"
-    PIXCOUNT="$(python -c "print(int($PIXCOUNT))")"
+    local pixcount; pixcount="$(convert "$infn" -format "%[fx:w*h]" info:)"
+    pixcount="$(python -c "print(int($pixcount))")"
     # calculate target pixel count, approx. 1.2M for 300dpi
-    PIXCOUNT_A4=1200000 # always same number, calculus below for reference
-    [ -z "$PIXCOUNT_A4" ] && PIXCOUNT_A4="$(python -c "print(int(
-        ($RESOLUTION*210./25.4) * ($RESOLUTION*297./25.4) * $RATIO))")"
-    RESIZECMD=""
-    if [ ! -z "$PIXCOUNT" ] && [ ! -z "$PIXCOUNT_A4" ] \
-        && [ "$PIXCOUNT" -gt "$PIXCOUNT_A4" ]; then
-        RESIZECMD="-resize $PIXCOUNT_A4@"
+    local pixcountMax=1200000 # always same number, calculus below for reference
+    [ -z "$pixcountMax" ] && pixcountMax="$(python -c "print(int(
+        ($RESOLUTION*210./25.4) * ($RESOLUTION*297./25.4) * $testRatio))")"
+    local resizecmd=""
+    if [ ! -z "$pixcount" ] && [ ! -z "$pixcountMax" ] \
+        && [ "$pixcount" -gt "$pixcountMax" ]; then
+        resizecmd="-resize $pixcountMax@"
     fi
     # https://www.imagemagick.org/Usage/crop/#trim_blur
     # https://superuser.com/a/1257643
-    convert "$INFN" $RESIZECMD -shave 8%x5% \
+    convert "$infn" $resizecmd -shave 8%x5% \
         -virtual-pixel White -blur 0x10 -fuzz 15% -trim \
-        +repage "$TMPFN" 2> /dev/null
-    PIXCOUNT_LEFT="$(convert "$TMPFN" -format "%[fx:w*h]" info:)"
-    PIXCOUNT_LEFT=$(python -c "print(int($PIXCOUNT_LEFT))")
+        +repage "$tmpfn" 2> /dev/null
+    pixcount="$(convert "$tmpfn" -format "%[fx:w*h]" info:)"
+    pixcount=$(python -c "print(int($pixcount))")
+    printf "%s: Test img pix count: %d -> " "$infn" "$pixcount"
     local move="mv"
-    printf "%s: Test img pix count: %d -> " "$INFN" "$PIXCOUNT_LEFT"
-    if [ ! -z "$PIXCOUNT_LEFT" ] && [ "$PIXCOUNT_LEFT" -lt 100 ]; then
+    if [ ! -z "$pixcount" ] && [ "$pixcount" -lt 100 ]; then
         # with less than 100 pix left, it's blank
-#    if (convert $TMPFN info: | grep -q '1x1'); then
         printf "blank\n"
-        $move "$INFN" "$INFN.blank"
+        $move "$infn" "$infn.blank"
     else
         printf "command code? "
-        MODE="$(zbarimg -q --raw "$TMPFN")"
-        if [ "$MODE" == "multi" ]; then
-            $move "$INFN" "$INFN.multi"
+        mode="$(zbarimg -q --raw "$tmpfn")"
+        if [ "$mode" == "multi" ]; then
+            $move "$infn" "$infn.multi"
             printf "multi!\n"
-        elif [ "$MODE" == "single" ]; then
-            $move "$INFN" "$INFN.single"
+        elif [ "$mode" == "single" ]; then
+            $move "$infn" "$infn.single"
             printf "single!\n"
         else
             printf "nope\n"
