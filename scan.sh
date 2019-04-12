@@ -40,6 +40,7 @@ timestamp() {
     LAST_TS="$(cat "$TIMESTAMPFN")"
     if [ ! -z "$LAST_TS" ] && [ "$LAST_TS" == "$TS" ]; then
         while [ "$LAST_TS" == "$TS" ]; do
+            # add milliseconds if timestamp exists already
             NS="$(date +%N)"
             TS="${TS}-${NS:0:3}"
         done
