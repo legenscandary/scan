@@ -28,9 +28,17 @@ delIntermediate() {
 }
 
 logSubDir() {
-    PREFIX="$1"
-    TS="$2"
-    echo "$LOG_DIR/$TS $PREFIX"
+    local prefix="$1"
+    local ts="$2"
+    echo "$LOG_DIR/$ts $prefix"
+}
+
+logBaseName() {
+    local prefix="$1"
+    local ts="$2"
+    local subdir; subdir="$(logSubDir "$prefix" "$ts")"
+    mkdir -p "$subdir"
+    echo "$subdir/${prefix}"
 }
 
 timestamp() {
@@ -47,9 +55,7 @@ timestamp() {
     else
         echo "$TS" > "$TIMESTAMPFN"
     fi
-    SUBDIR="$(logSubDir "$PREFIX" "$TS")"
-    mkdir -p "$SUBDIR"
-    LOG_FILE="$SUBDIR/${PREFIX}.log"
+    LOG_FILE="$(logBaseName "$PREFIX" "$TS").log"
     # echo "$PREFIX $TS"
     echo "$PREFIX $TS > '$LOG_FILE' 2>&1"
 }
@@ -459,9 +465,13 @@ batchScan()
         removeDeskewArtifacts "$FN2"
 
         # evaluate: qr, blank or sth else?
-        classifyImg "$FN1" &
+        local classifyLog1; classifyLog1="$(logBaseName "$PREFIX" "$TS")_${FN1%*.tif}.log"
+        echo "classifyImg "$FN1" > '$classifyLog1'"
+        classifyImg "$FN1" > "$classifyLog1" 2>&1 &
         FN1PID=$!
-        classifyImg "$FN2" &
+        local classifyLog2; classifyLog2="$(logBaseName "$PREFIX" "$TS")_${FN2%*.tif}.log"
+        echo "classifyImg "$FN2" > '$classifyLog2'"
+        classifyImg "$FN2" > "$classifyLog2" 2>&1 &
         FN2PID=$!
         echo " waiting for classifyImg PIDs: $FN1PID $FN2PID"
         wait $FN1PID $FN2PID
