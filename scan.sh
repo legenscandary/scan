@@ -33,14 +33,6 @@ logSubDir() {
     echo "$LOG_DIR/$ts $prefix"
 }
 
-logBaseName() {
-    local prefix="$1"
-    local ts="$2"
-    local subdir; subdir="$(logSubDir "$prefix" "$ts")"
-    mkdir -p "$subdir"
-    echo "$subdir/${prefix}"
-}
-
 timestamp() {
     PREFIX="$1"
     TS="$(date '+%Y-%m-%d_%H-%M-%S')"
@@ -55,7 +47,9 @@ timestamp() {
     else
         echo "$TS" > "$TIMESTAMPFN"
     fi
-    LOG_FILE="$(logBaseName "$PREFIX" "$TS").log"
+    local subdir; subdir="$(logSubDir "$prefix" "$ts")"
+    mkdir -p "$subdir"
+    LOG_FILE="$subdir/${prefix}.log"
     # echo "$PREFIX $TS"
     echo "$PREFIX $TS > '$LOG_FILE' 2>&1"
 }
@@ -451,6 +445,7 @@ batchScan()
     LASTSCANTIME=$(date +%s)
     CURRENT_MODE=single
     local DOC_DIR=""
+    local logDir; logDir="$(logSubDir "$prefix" "$ts")"
     # wait max $SCANTIMEOUT seconds for scanned images files to show up
     while [ "$(($(date +%s)-LASTSCANTIME))" -lt $SCANTIMEOUT ];
     do
@@ -465,11 +460,11 @@ batchScan()
         removeDeskewArtifacts "$FN2"
 
         # evaluate: qr, blank or sth else?
-        local classifyLog1; classifyLog1="$(logBaseName "$PREFIX" "$TS")_${FN1%*.tif}.log"
+        local classifyLog1="$logDir/${FN1%*.tif}.log"
         echo "classifyImg "$FN1" > '$classifyLog1'"
         classifyImg "$FN1" > "$classifyLog1" 2>&1 &
         FN1PID=$!
-        local classifyLog2; classifyLog2="$(logBaseName "$PREFIX" "$TS")_${FN2%*.tif}.log"
+        local classifyLog2="$logDir/${FN2%*.tif}.log"
         echo "classifyImg "$FN2" > '$classifyLog2'"
         classifyImg "$FN2" > "$classifyLog2" 2>&1 &
         FN2PID=$!
