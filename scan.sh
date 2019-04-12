@@ -115,8 +115,6 @@ classifyImg()
     echo "classifyImg $*"
     local infn="$1"
     [ -f "$infn" ] || return
-    local tmpfn; tmpfn=$(mktemp --tmpdir="$(pwd)" "test_XXXXXXXX.tif")
-    chmod a+rx "$tmpfn"
 
     local testRatio=0.14 # percentage of nominal pixel count of an A4 page to keep
     # get pixel count in given image
@@ -131,33 +129,39 @@ classifyImg()
         && [ "$pixcount" -gt "$pixcountMax" ]; then
         resizecmd="-resize $pixcountMax@"
     fi
+    local cropfn; cropfn=$(mktemp --tmpdir="$(pwd)" "crop_XXXXXXXX.tif")
+    chmod a+rx "$cropfn"
     # https://www.imagemagick.org/Usage/crop/#trim_blur
     # https://superuser.com/a/1257643
-    convert "$infn" $resizecmd -shave 8%x5% \
+    # resize only first, need this for QR interpretation later
+    convert "$infn" $resizecmd -shave 8%x5% -colorspace gray "$cropfn"
+    # get remaining pixel count and crop position (ROI)
+    local pixcount geom
+    read pixcount geom < <(convert "$cropfn" \
         -virtual-pixel White -blur 0x10 -fuzz 15% -trim \
-        +repage "$tmpfn" 2> /dev/null
-    pixcount="$(convert "$tmpfn" -format "%[fx:w*h]" info:)"
+        -format "%[fx:w*h] %[fx:w]x%[fx:h]+%[fx:page.x]+%[fx:page.y]" info: 2>/dev/null)
     pixcount="$(python -c "print(int($pixcount))")"
-    printf "%s: Test img pix count: %d -> " "$infn" "$pixcount"
+    printf "#pix %d, geom: %s -> " "$pixcount" "$geom"
     local move="mv"
     if [ ! -z "$pixcount" ] && [ "$pixcount" -lt 100 ]; then
         # with less than 100 pix left, it's blank
         printf "blank\n"
         $move "$infn" "$infn.blank"
     else
+        mogrify -crop "$geom" "$cropfn"
         printf "command code? "
-        mode="$(zbarimg -q --raw "$tmpfn")"
+        mode="$(zbarimg -q --raw "$cropfn")"
         if [ "$mode" == "multi" ]; then
-            $move "$infn" "$infn.multi"
             printf "multi!\n"
+            $move "$infn" "$infn.multi"
         elif [ "$mode" == "single" ]; then
-            $move "$infn" "$infn.single"
             printf "single!\n"
+            $move "$infn" "$infn.single"
         else
             printf "nope\n"
         fi;
     fi;
-    rm -f "$TMPFN"
+    rm -f "$cropfn" # disable this for debugging
 }
 
 getTmpDir() {
