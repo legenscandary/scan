@@ -310,21 +310,21 @@ st2pdf()
 # processes each document dir containing images and creates a ocr'd PDF file
 processDoc()
 {
-    DOC_DIR="$1"
-    PREFIX="$2"
-    TS="$3"
-    [ -z "$DOC_DIR" ] && return # ignore missing doc dir, happens on startup
-    STARTTIME=$(date +%s)
+    local docdir="$1"
+    local prefix="$2"
+    local ts="$3"
+    [ -z "$docdir" ] && return # ignore missing doc dir, happens on startup
+    local starttime; starttime=$(date +%s)
     echo "processDoc $*"
     # check if given document exists
-    if [ ! -d "$DOC_DIR" ]; then
-        echo "processDoc: Given document dir '$DOC_DIR' does not exist!"
+    if [ ! -d "$docdir" ]; then
+        echo "processDoc: Given document dir '$docdir' does not exist!"
         return;
     fi;
-    cd "$DOC_DIR" || return
-    SCANS="${SCAN_PREFIX}_*.tif"
-    if [ -z "$(ls $SCANS 2> /dev/null)" ]; then
-        echo "processDoc: No scans found in '$DOC_DIR', skipping!"
+    cd "$docdir" || return
+    local scans="${SCAN_PREFIX}_*.tif"
+    if [ -z "$(ls $scans 2> /dev/null)" ]; then
+        echo "processDoc: No scans found in '$docdir', skipping!"
         return;
     fi;
     # add us to the queue and wait
@@ -347,34 +347,34 @@ processDoc()
             $textArgs \
             --color-mode=color_grayscale \
             --tiff-force-keep-color-space \
-            $SCANS out_st
+            $scans out_st
 
     # Use tiffcp to combine output tiffs to a single mult-page tiff
-    tiffcp out_st/$SCANS combined.tif
+    tiffcp out_st/$scans combined.tif
     # Convert the tiff to PDF
     tiff2pdf -j -q 90 combined.tif > combined.pdf
     # fix pink color bug when using jpeg compression
     sed -i'' -e 's/\/DecodeParms << \/ColorTransform 0 >>//g' combined.pdf
     # move result (PDF containing images only) to output dir
-    SUBDIR="$(logSubDir "$PREFIX" "$TS")"
-    mv combined.pdf "$SUBDIR/img.pdf"
+    local subdir; subdir="$(logSubDir "$prefix" "$ts")"
+    mv combined.pdf "$subdir/img.pdf"
 
     echo "
     ################ OCR ################
     "
-    OUTFILE="$OUT_DIR/$TS.pdf"
-    st2pdf "$OUTFILE" $(ls out_st/$SCANS)
+    local outfn="$OUT_DIR/$ts.pdf"
+    st2pdf "$outfn" $(ls out_st/$scans)
 
-    renameByContent "$OUTFILE" "$SUBDIR/text.txt"
+    renameByContent "$outfn" "$subdir/text.txt"
 
     echo "
     ################ Cleaning Up ################
     "
     cd ..
-    delIntermediate || rm -Rf "$DOC_DIR"
+    delIntermediate || rm -Rf "$docdir"
 
-    ELAPSED=$(($(date +%s)-STARTTIME))
-    echo " Finished processDoc '$*' '$BASHPID' $(date) after ${ELAPSED}s"
+    local elapsed; elapsed=$(($(date +%s)-starttime))
+    echo " Finished processDoc '$*' '$BASHPID' $(date) after ${elapsed}s"
     # remove this PID from queue, wake up the next
     echo "==bef=="
     cat "$QUEUEFN"
@@ -389,21 +389,21 @@ processDoc()
 
 removeDeskewArtifacts()
 {
-    FN="$1"
-    XMAX="$(convert -format "%[fx:w-1]" "$FN" info:)"
-    YMAX="$(convert -format "%[fx:h-1]" "$FN" info:)"
-    [ -z "$XMAX" ] || [ -z "$YMAX" ] && return
-    SCANBCKG="rgb(213,220,220)"
-    SHAVEPX=$((RESOLUTION/10)) # 10th of an inch == 2.5mm
-#    cp "$FN" /tmp/ # for debugging
-    mogrify -fill "$SCANBCKG" \
-        -floodfill +$XMAX+0     black \
-        -floodfill +$XMAX+$YMAX black \
-        -floodfill +0+$YMAX     black \
+    local fn="$1"
+    local xmax; xmax="$(convert -format "%[fx:w-1]" "$fn" info:)"
+    local ymax; ymax="$(convert -format "%[fx:h-1]" "$fn" info:)"
+    [ -z "$xmax" ] || [ -z "$ymax" ] && return
+    local scanbckg="rgb(213,220,220)"
+    local shavepx=$((RESOLUTION/10)) # 10th of an inch == 2.5mm
+#    cp "$fn" /tmp/ # for debugging
+    mogrify -fill "$scanbckg" \
+        -floodfill +$xmax+0     black \
+        -floodfill +$xmax+$ymax black \
+        -floodfill +0+$ymax     black \
         -floodfill +0+0         black \
-        -fuzz 10% -trim +repage -shave ${SHAVEPX}x${SHAVEPX} \
+        -fuzz 10% -trim +repage -shave ${shavepx}x${shavepx} \
         -brightness-contrast 7x7 \
-        "$FN"
+        "$fn"
 }
 
 batchScan()
@@ -458,7 +458,7 @@ batchScan()
     LASTSCANTIME=$(date +%s)
     CURRENT_MODE=single
     local DOC_DIR=""
-    local logDir; logDir="$(logSubDir "$prefix" "$ts")"
+    local logdir; logdir="$(logSubDir "$prefix" "$ts")"
     # wait max $SCANTIMEOUT seconds for scanned images files to show up
     while [ "$(($(date +%s)-LASTSCANTIME))" -lt $SCANTIMEOUT ];
     do
@@ -473,11 +473,11 @@ batchScan()
         removeDeskewArtifacts "$FN2"
 
         # evaluate: qr, blank or sth else?
-        local classifyLog1="$logDir/${FN1%*.tif}.log"
+        local classifyLog1="$logdir/${FN1%*.tif}.log"
         echo "classifyImg "$FN1" > '$classifyLog1'"
         classifyImg "$FN1" > "$classifyLog1" 2>&1 &
         FN1PID=$!
-        local classifyLog2="$logDir/${FN2%*.tif}.log"
+        local classifyLog2="$logdir/${FN2%*.tif}.log"
         echo "classifyImg "$FN2" > '$classifyLog2'"
         classifyImg "$FN2" > "$classifyLog2" 2>&1 &
         FN2PID=$!
