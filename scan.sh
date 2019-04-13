@@ -186,10 +186,11 @@ queueHead()
 }
 
 # extract text from pdf including bounding boxes for additional processing (TODO)
-renameByContent() {
-    OUTFILE="$1"
-    TEXTFILE="$2"
-    PYCONVERT=$(cat << EOF
+renameByContent()
+{
+    local outfn="$1"
+    local textfn="$2"
+    local pydateconv=$(cat << EOF
 import sys, datetime;
 def convInt(x, width = 2):
     try:
@@ -208,42 +209,43 @@ y, m, d = sys.argv[1:]
 print(convInt(y, 4) + "-" + convInt(m) + "-" + convInt(d))
 EOF
 )
-    # pdftotext -bbox "$OUTFILE" "$TEXTFILE"
-    pdftotext -layout "$OUTFILE" "$TEXTFILE"
+    # pdftotext -bbox "$outfn" "$textfn"
+    pdftotext -layout "$outfn" "$textfn"
     # get the first word in plain text, replace illegal chars
-    #WORD="$(egrep '^\s+<word' "$TEXTFILE" | \
+    #word="$(egrep '^\s+<word' "$textfn" | \
     #        awk -F'>' '{print $2}' | \
     #        awk -F'<' '{print $1}' | \
     #        head -n 1 | $SANITIZE )"
-    WORD="$(head -n 1 "$TEXTFILE" | sed -e 's/^\s*//' -e 's/\s*$//' | $SANITIZE)"
-    if [ ! -z "$WORD" ]; then
+    local word; word="$(head -n 1 "$textfn" | \
+        sed -e 's/^\s*//' -e 's/\s*$//' | $SANITIZE)"
+    if [ ! -z "$word" ]; then
         # use the first 3 words and limit to 20 chars
-        WORD="$(echo "$WORD" | grep -Eo '^(\<\w+\>\s*)?(\<\w+\>\s*)?(\<\w+\>\s*)?')"
-        WORD="${WORD:0:20}"
-        echo "extracted text: '$WORD'"
+        word="$(echo "$word" | grep -Eo '^(\<\w+\>\s*)?(\<\w+\>\s*)?(\<\w+\>\s*)?')"
+        word="${word:0:20}"
+        echo "extracted text: '$word'"
         # TODO:
         # - multiple date formats: dd.mm.yyyy (currently)
         #   but also: dd-mm-yyyy, yyyy-mm-dd, dd/mm/yyyy
         # - cut name length on word boundaries, trim whitespace after trimming!
         # - detect invoice number?
-        #DATE="$(egrep -o '[0-9]?[0-9]\.[0-9]?[0-9]\.[0-9]?[0-9]?[0-9][0-9]' $TEXTFILE | head -n 1)"
-        REGEX='[^0-9]([0-9]?[0-9])[-/\. ]([0-9]?[0-9])[-/\. ]([0-9]?[0-9]?[0-9][0-9])'
-        [[ "$(cat "$TEXTFILE")" =~ $REGEX ]]
-        [ -z "$BASH_REMATCH" ] || DATE="$(python -c "$PYCONVERT" \
+        local docdate
+        #docdate="$(egrep -o '[0-9]?[0-9]\.[0-9]?[0-9]\.[0-9]?[0-9]?[0-9][0-9]' $textfn | head -n 1)"
+        local regex='[^0-9]([0-9]?[0-9])[-/\. ]([0-9]?[0-9])[-/\. ]([0-9]?[0-9]?[0-9][0-9])'
+        [[ "$(cat "$textfn")" =~ $regex ]]
+        [ -z "$BASH_REMATCH" ] || docdate="$(python -c "$pydateconv" \
             "${BASH_REMATCH[3]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[1]}")"
         # prepending date in iso format, if any
-        [ -z "$DATE" ] || WORD="$DATE $WORD"
+        [ -z "$docdate" ] || word="$docdate $word"
         # trim leading&trailing whitespace
-        WORD="$(echo -e "${WORD}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-        [ -z "$WORD" ] && return # nothing to rename to
+        word="$(echo -e "${word}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        [ -z "$word" ] && return # nothing to rename to
         # save with new file name if it doesn't exist already
-        OUTDIR="$(dirname "$OUTFILE")"
-        NEWFN="$OUTDIR/$WORD.pdf"
-        [ -e "$NEWFN" ] && NEWFN="${OUTFILE%*.pdf} $WORD.pdf"
+        local newfn; newfn="$(dirname "$outfn")/$word.pdf"
+        [ -e "$newfn" ] && newfn="${outfn%*.pdf} $word.pdf"
 
         # move result PDF to final destination
         # include first word from doc in name, limit its length
-        mv "$OUTFILE" "$NEWFN"
+        mv "$outfn" "$newfn"
     fi;
 }
 
