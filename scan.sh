@@ -104,12 +104,13 @@ EOF
     delIntermediate || rm -Rf "$qrdir"
 }
 
-createCommandSheets() {
+createCommandSheets()
+{
     echo "createCommandSheets $*"
-    PREFIX="$1"
-    createCommand "$PREFIX" multi \
+    local prefix="$1"
+    createCommand "$prefix" multi \
         "Alle folgenden Blätter werden zu einem Dokument zusammengefasst.";
-    createCommand "$PREFIX" single \
+    createCommand "$prefix" single \
         "Jedes folgende Blatt wird ein einzelnes Dokument.";
 }
 
@@ -169,17 +170,19 @@ classifyImg()
     rm -f "$cropfn" # disable this for debugging
 }
 
-getTmpDir() {
-    PREFIX="$1"
-    TEMPDIR="$(mktemp -d --tmpdir="$WORK_DIR" "${PREFIX}_XXXXXXXX")"
-    chmod -fR a+rx "$TEMPDIR"
-    echo "$TEMPDIR"
+getTmpDir()
+{
+    local prefix="$1"
+    local tmpdir; tmpdir="$(mktemp -d --tmpdir="$WORK_DIR" "${prefix}_XXXXXXXX")"
+    chmod -fR a+rx "$tmpdir"
+    echo "$tmpdir"
 }
 
-queueHead() {
-    PID="$(head -n 1 "$QUEUEFN" | awk '{print $1}')"
-    [ -z "$PID" ] && PID=0
-    echo "$PID"
+queueHead()
+{
+    local pid; pid="$(head -n 1 "$QUEUEFN" | awk '{print $1}')"
+    [ -z "$pid" ] && pid=0
+    echo "$pid"
 }
 
 # extract text from pdf including bounding boxes for additional processing (TODO)
@@ -244,10 +247,13 @@ EOF
     fi;
 }
 
-queryJobCount() {
+queryJobCount()
+{
     jobs > "$TRJOBSFN"
 }
-getJobCount() {
+
+getJobCount()
+{
     wc -l "$TRJOBSFN" | cut -d' ' -f1
 }
 
