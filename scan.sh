@@ -22,18 +22,21 @@ SCAN_PREFIX="scan"
 # command to replace illegal file name chars (Windows) by underscore (renameByContent())
 SANITIZE='tr "/\\\\?<>:*|&" _'
 
-delIntermediate() {
+delIntermediate()
+{
     return 0; # debug is on
     return 1; # debug is off
 }
 
-logSubDir() {
+logSubDir()
+{
     local prefix="$1"
     local ts="$2"
     echo "$LOG_DIR/$ts $prefix"
 }
 
-timestamp() {
+timestamp()
+{
     local prefix="$1"
     local ts; ts="$(date '+%Y-%m-%d_%H-%M-%S')"
     # prevent identical time stamps by succeeding calls
@@ -54,22 +57,23 @@ timestamp() {
     echo "$prefix $ts > '$logFile' 2>&1"
 }
 
-imageWithCaption() {
-    VSPACE="$1"
-    echo "\thispagestyle{empty} \begin{center} \vspace*{${VSPACE}mm}
+imageWithCaption()
+{
+    local vspace="$1"
+    echo "\thispagestyle{empty} \begin{center} \vspace*{${vspace}mm}
         \includegraphics[width=0.3\textwidth]{qrcode.png} \\\\
-        {\huge $QRDESCR \\ ($QRCMD, ${RESOLUTION}dpi, farbe)} \end{center}"
+        {\huge $qrdesc \\ ($qrcmd, ${RESOLUTION}dpi, farbe)} \end{center}"
 }
 
 createCommand() {
     echo "  ############# createCommand $1 #############"
-    PREFIX="$1"
-    QRCMD="$2"
-    QRDESCR="$3"
-    QR_DIR=$(mktemp -d)
-    echo "Using working dir: '$QR_DIR'"
-    cd "$QR_DIR" || return
-    qrencode -s 5 -d 300 -l H -o qrcode.png "$QRCMD"
+    local prefix="$1"
+    local qrcmd="$2"
+    local qrdesc="$3"
+    local qrdir=$(mktemp -d)
+    echo "Using working dir: '$qrdir'"
+    cd "$qrdir" || return
+    qrencode -s 5 -d 300 -l H -o qrcode.png "$qrcmd"
     # latex document
     cat > "qrcode.tex" << EOF
 %-*- coding: utf-8; -*-
@@ -88,16 +92,16 @@ $(imageWithCaption 90)
 \end{document}
 EOF
     pdflatex qrcode
-    QRPDF="$QR_DIR/qrcode.pdf" # expected result pdf file
-    if [ ! -f "$QRPDF" ]; then
-        echo "No PDF was created: '$QRPDF'!"
+    local qrpdf="$qrdir/qrcode.pdf" # expected result pdf file
+    if [ ! -f "$qrpdf" ]; then
+        echo "No PDF was created: '$qrpdf'!"
         return 1
     fi;
-    DEST_DIR="$OUT_DIR/$PREFIX"
-    mkdir -p "$DEST_DIR"
-    mv "$QRPDF" "$DEST_DIR/$QRCMD.pdf"
-    echo "created qr command sheet: $QRCMD"
-    delIntermediate || rm -Rf "$QR_DIR"
+    dstdir="$OUT_DIR/$prefix"
+    mkdir -p "$dstdir"
+    mv "$qrpdf" "$dstdir/$qrcmd.pdf"
+    echo "created qr command sheet: $qrcmd"
+    delIntermediate || rm -Rf "$qrdir"
 }
 
 createCommandSheets() {
