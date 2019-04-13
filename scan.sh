@@ -259,11 +259,11 @@ getJobCount()
     wc -l "$TRJOBSFN" | cut -d' ' -f1
 }
 
-st2pdf() {
+st2pdf()
+{
     local outfile; outfile="$1"
     shift # do not loop over output file below
-    local cpu_count;
-    cpu_count=$(grep -c processor < /proc/cpuinfo)
+    local cpu_count; cpu_count=$(grep -c processor < /proc/cpuinfo)
 
     TRJOBSFN="$(mktemp)"
     for fn in "$@"; do
@@ -308,7 +308,8 @@ st2pdf() {
 }
 
 # processes each document dir containing images and creates a ocr'd PDF file
-processDoc() {
+processDoc()
+{
     DOC_DIR="$1"
     PREFIX="$2"
     TS="$3"
