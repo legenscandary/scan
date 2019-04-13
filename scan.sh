@@ -34,24 +34,24 @@ logSubDir() {
 }
 
 timestamp() {
-    PREFIX="$1"
-    TS="$(date '+%Y-%m-%d_%H-%M-%S')"
+    local prefix="$1"
+    local ts; ts="$(date '+%Y-%m-%d_%H-%M-%S')"
     # prevent identical time stamps by succeeding calls
-    LAST_TS="$(cat "$TIMESTAMPFN")"
-    if [ ! -z "$LAST_TS" ] && [ "$LAST_TS" == "$TS" ]; then
-        while [ "$LAST_TS" == "$TS" ]; do
+    local tsPrev; tsPrev="$(cat "$TIMESTAMPFN")"
+    if [ ! -z "$tsPrev" ] && [ "$tsPrev" = "$ts" ]; then
+        while [ "$tsPrev" = "$ts" ]; do
             # add milliseconds if timestamp exists already
-            NS="$(date +%N)"
-            TS="${TS}-${NS:0:3}"
+            local ns; ns="$(date +%N)"
+            ts="${ts}-${ns:0:3}"
         done
     else
-        echo "$TS" > "$TIMESTAMPFN"
+        echo "$ts" > "$TIMESTAMPFN"
     fi
     local subdir; subdir="$(logSubDir "$prefix" "$ts")"
     mkdir -p "$subdir"
-    LOG_FILE="$subdir/${prefix}.log"
-    # echo "$PREFIX $TS"
-    echo "$PREFIX $TS > '$LOG_FILE' 2>&1"
+    local logFile="$subdir/${prefix}.log"
+    # echo "$prefix $ts"
+    echo "$prefix $ts > '$logFile' 2>&1"
 }
 
 imageWithCaption() {
