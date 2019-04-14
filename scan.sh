@@ -408,8 +408,8 @@ removeDeskewArtifacts()
 
 batchScan()
 {
-    PREFIX="$1"
-    TS="$2"
+    local prefix="$1"
+    local ts="$2"
 
     # test required file/directory permissions
     [ -d "$OUT_DIR" ] || mkdir -p "$OUT_DIR"
@@ -428,18 +428,18 @@ batchScan()
         exit 1
     fi;
 
-    LOCKFILE="$WORK_DIR/$PREFIX"
-    if ! lockfile-create --retry 1 "$LOCKFILE"; then
+    local lockfn="$WORK_DIR/$prefix"
+    if ! lockfile-create --retry 1 "$lockfn"; then
         echo "Error: scanning already in progress!"
         exit
     fi;
     echo " batchScan '$*' started on dev '$SCAN_DEVICE'"
-    SCAN_DIR="$(getTmpDir "$PREFIX")"
-    cd "$SCAN_DIR" || return
+    local scandir; scandir="$(getTmpDir "$prefix")"
+    cd "$scandir" || return
     echo "
     ################## Scanning ###################
     "
-    PATTERN="${PREFIX}_%03d.tif"
+    local pattern="${prefix}_%03d.tif"
     # always scanning both side of a sheet, 2 images/sheet
     (scanimage \
             -d "$SCAN_DEVICE" \
@@ -450,75 +450,77 @@ batchScan()
             --page-width $WIDTH -x $WIDTH \
             --page-height $HEIGHT -y $HEIGHT \
             --swdeskew=yes --swcrop=yes \
-            --format=tiff --batch="$PATTERN" \
+            --format=tiff --batch="$pattern" \
     ) & # scan in background
 
     # first idx in dir: $(($(ls -1 scan_*.tif | head -n 1 | egrep -o '[[:digit:]]+')));
-    IDX=1
-    LASTSCANTIME=$(date +%s)
-    CURRENT_MODE=single
-    local DOC_DIR=""
+    local idx=1
+    local lastScanTime; lastScanTime=$(date +%s)
+    local currentMode=single
+    local docdir=""
     local logdir; logdir="$(logSubDir "$prefix" "$ts")"
     # wait max $SCANTIMEOUT seconds for scanned images files to show up
-    while [ "$(($(date +%s)-LASTSCANTIME))" -lt $SCANTIMEOUT ];
+    while [ "$(($(date +%s)-lastScanTime))" -lt $SCANTIMEOUT ];
     do
-        echo " .. $(($(date +%s)-LASTSCANTIME))/${SCANTIMEOUT}s since last scan"
+        echo " .. $(($(date +%s)-lastScanTime))/${SCANTIMEOUT}s since last scan"
         sleep 1; # check for results in 1sec intervals
         # wait for the first 2 pages becoming available, check expected file names
-        FN1="$(printf "$PATTERN" $((IDX)))"
-        FN2="$(printf "$PATTERN" $((IDX+1)))"
-        if [ ! -f "$FN1" ] || [ ! -f "$FN2" ]; then continue; fi;
+        local fn1; fn1="$(printf "$pattern" $((idx)))"
+        local fn2; fn2="$(printf "$pattern" $((idx+1)))"
+        if [ ! -f "$fn1" ] || [ ! -f "$fn2" ]; then continue; fi;
 
-        removeDeskewArtifacts "$FN1"
-        removeDeskewArtifacts "$FN2"
+        removeDeskewArtifacts "$fn1"
+        removeDeskewArtifacts "$fn2"
 
         # evaluate: qr, blank or sth else?
-        local classifyLog1="$logdir/${FN1%*.tif}.log"
-        echo "classifyImg "$FN1" > '$classifyLog1'"
-        classifyImg "$FN1" > "$classifyLog1" 2>&1 &
-        FN1PID=$!
-        local classifyLog2="$logdir/${FN2%*.tif}.log"
-        echo "classifyImg "$FN2" > '$classifyLog2'"
-        classifyImg "$FN2" > "$classifyLog2" 2>&1 &
-        FN2PID=$!
-        echo " waiting for classifyImg PIDs: $FN1PID $FN2PID"
-        wait $FN1PID $FN2PID
+        local classifyLog1="$logdir/${fn1%*.tif}.log"
+        echo "classifyImg "$fn1" > '$classifyLog1'"
+        classifyImg "$fn1" > "$classifyLog1" 2>&1 &
+        local fn1PID=$!
+        local classifyLog2="$logdir/${fn2%*.tif}.log"
+        echo "classifyImg "$fn2" > '$classifyLog2'"
+        classifyImg "$fn2" > "$classifyLog2" 2>&1 &
+        local fn2PID=$!
+        echo " waiting for classifyImg PIDs: $fn1PID $fn2PID"
+        wait $fn1PID $fn2PID
 
         # on mode switch create new doc dir, move there all files
-        if [ -f "$FN1.multi" ] || [ -f "$FN2.multi" ]; then
-            CURRENT_MODE=multi
-            rm -f "$FN1" "$FN2" # remove scans of mode sheet
-            # TODO: check for empty DOC_DIR and skip possibly
+        if [ -f "$fn1.multi" ] || [ -f "$fn2.multi" ]; then
+            currentMode=multi
+            rm -f "$fn1" "$fn2" # remove scans of mode sheet
+            # TODO: check for empty docdir and skip possibly
             # queue processing of the previous document
-            eval processDoc "$DOC_DIR" "$(timestamp doc)" &
+            eval processDoc "$docdir" "$(timestamp doc)" &
             # create a new document on mode switch
-            DOC_DIR="$(getTmpDir doc)"
-        elif [ -f "$FN1.single" ] || [ -f "$FN2.single" ]; then
-            rm -f "$FN1" "$FN2" # remove scans of mode sheet
+            docdir="$(getTmpDir doc)"
+        elif [ -f "$fn1.single" ] || [ -f "$fn2.single" ]; then
+            rm -f "$fn1" "$fn2" # remove scans of mode sheet
             # process previous multi sheet doc possibly
-            if [ "$CURRENT_MODE" != single ]; then
-                eval processDoc "$DOC_DIR" "$(timestamp doc)" &
-                DOC_DIR="$(getTmpDir doc)"
+            if [ "$currentMode" != single ]; then
+                eval processDoc "$docdir" "$(timestamp doc)" &
+                docdir="$(getTmpDir doc)"
             fi
-            CURRENT_MODE=single
+            currentMode=single
         fi
         # create new doc dir on first run, later it is set after start of processing
-        [ -z "$DOC_DIR" ] && DOC_DIR="$(getTmpDir doc)"
+        [ -z "$docdir" ] && docdir="$(getTmpDir doc)"
         rm -f ./*.single ./*.multi ./*.blank
         # move scanned images to current document dir
-        if [ -f "$FN1" ] || [ -f "$FN2" ]; then
-            echo " -> $CURRENT_MODE mode, moving $(ls "$FN1" "$FN2" 2> /dev/null) to '$DOC_DIR'."
-            mv -f "$FN1" "$FN2" "$DOC_DIR" 2> /dev/null
+        if [ -f "$fn1" ] || [ -f "$fn2" ]; then
+            local fns; fns="$(find . -mindepth 1 -maxdepth 1 \
+                -regex ".*\\($fn1\\|$fn2\\)" -printf '%p ')"
+            echo " -> $currentMode mode, moving $fns to '$docdir'."
+            mv -f "$fn1" "$fn2" "$docdir" 2> /dev/null
             # process directly after copying in single mode
-            if [ "$CURRENT_MODE" == single ]; then
-                eval processDoc "$DOC_DIR" "$(timestamp doc)" &
-                DOC_DIR="$(getTmpDir doc)"
+            if [ "$currentMode" == single ]; then
+                eval processDoc "$docdir" "$(timestamp doc)" &
+                docdir="$(getTmpDir doc)"
             fi
         fi
         
         ls -1; # show directory contents in log file
-        IDX=$((IDX+2))
-        LASTSCANTIME=$(date +%s)
+        idx=$((idx+2))
+        lastScanTime=$(date +%s)
     done
 
     # cleanup, scanimage may still run in case of paper jam
@@ -529,12 +531,12 @@ batchScan()
     #              | awk '{print $1}')
 
     # process the last multi document, after timeout of scanning loop
-    [ "$CURRENT_MODE" == multi ] && eval processDoc "$DOC_DIR" "$(timestamp doc)" &
+    [ "$currentMode" == multi ] && eval processDoc "$docdir" "$(timestamp doc)" &
 
     sleep 2
     # directory empty, remove it
     cd ..
-    delIntermediate || rm -Rf "$SCAN_DIR"
+    delIntermediate || rm -Rf "$scandir"
 
     if [ -f "$QUEUEFN" ]; then
         echo " Done with scanning, current queue:"
@@ -542,7 +544,7 @@ batchScan()
     fi
 
     echo " finished batchScan '$*' '$BASHPID' $(date)"
-    lockfile-remove "$LOCKFILE"
+    lockfile-remove "$lockfn"
 }
 
 userExists() # returns a 'true' return code if the user exists already
