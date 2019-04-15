@@ -314,7 +314,6 @@ processDoc()
     local prefix="$2"
     local ts="$3"
     [ -z "$docdir" ] && return # ignore missing doc dir, happens on startup
-    local starttime; starttime=$(date +%s)
     echo "processDoc $*"
     # check if given document exists
     if [ ! -d "$docdir" ]; then
@@ -323,7 +322,8 @@ processDoc()
     fi;
     cd "$docdir" || return
     local scans="${SCAN_PREFIX}_*.tif"
-    if [ -z "$(ls $scans 2> /dev/null)" ]; then
+    local fileCount; fileCount="$(ls -1 $scans 2> /dev/null | wc -l)"
+    if [ -z "$fileCount" ] || [ "$fileCount" -lt 1 ]; then
         echo "processDoc: No scans found in '$docdir', skipping!"
         return;
     fi;
@@ -332,6 +332,8 @@ processDoc()
     # stop this process if another is currently active
     [ "$(queueHead)" -ne "$BASHPID" ] && kill -STOP "$BASHPID"
 
+    # remember timestamp once we continue processing here
+    local starttime; starttime="$(date +%s)"
     echo "
     ############## Converting to PDF ##############
     "
@@ -374,7 +376,9 @@ processDoc()
     delIntermediate || rm -Rf "$docdir"
 
     local elapsed; elapsed=$(($(date +%s)-starttime))
-    echo " Finished processDoc '$*' '$BASHPID' $(date) after ${elapsed}s"
+    echo " Finished processDoc on $(date)."
+    echo "  '$*' with PID '$BASHPID'"
+    echo " Processed $fileCount pages in ${elapsed}s."
     # remove this PID from queue, wake up the next
     echo "==bef=="
     cat "$QUEUEFN"
