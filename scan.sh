@@ -275,7 +275,6 @@ st2pdf()
         queryJobCount
         while [ "$(getJobCount)" -ge "$cpu_count" ]; do
             sleep 1; queryJobCount
-            echo "jc: '$(getJobCount)' '$cpu_count' "
         done
     done
 
