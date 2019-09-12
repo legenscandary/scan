@@ -42,7 +42,26 @@ Please open a feature request in the *issues* section for each desired scanner.
 Legenscandary was tested on the following platforms, others might work as well.
 Especially Debian or Ubuntu Linux based systems should work.
 
-- Raspberry Pi 2B
+### Benchmarks
+
+The tables below list the processing time per scanned page on average (*mean*)
+with the standard deviation (*±*) and the number of processed documents used
+to calculate this statistic from (*#runs*).  
+**In multi mode**, each PDF
+([doc1](http://journals.iucr.org/j/issues/2015/03/00/vg5017/vg5017.pdf),
+ [doc2](http://journals.iucr.org/j/issues/2015/05/00/vg5026/vg5026.pdf))
+was printed out and fed to the scanner as a whole with a *multi* command sheet
+on top, so that the outcome is again a PDF of the same content.  
+**In single mode**, the individual sheets of the test PDFs were processed as
+individual documents (no command sheet), hence resulting in 2 pages per PDF
+(no blank pages included).
+
+### Raspberry Pi 2B
+
+|                 |   median (secs) |   mean (secs) |   ± (secs) |   #runs |
+|:----------------|----------------:|--------------:|-----------:|--------:|
+| single sheet    |             599 |           625 |        154 |       9 |
+| multiple sheets |            1075 |          1076 |         18 |       6 |
 
 ## Makes Use of
 
@@ -51,6 +70,12 @@ Especially Debian or Ubuntu Linux based systems should work.
 - tesseract
 - ghostscript
 - many more command line tools
+
+## Installation
+
+*put direct link here*
+
+takes approx 30 min on rpi 2, depends on network speed for package updates as well
 
 ## Support and Contact
 
