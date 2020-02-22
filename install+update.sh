@@ -319,6 +319,9 @@ updateScripts()
     elif [ ! -f "$installScript" ]; then # empty dir possibly
         git clone $REPO_URL .
     fi
+    if [ ! -f "$installScript" ]; then # fall back to default name, e.g. if called from pipe
+        installScript="$REPO_PATH/install+update.sh"
+    fi
     $installScript stage2 "$install_start_ts"
 }
 
