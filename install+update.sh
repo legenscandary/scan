@@ -83,7 +83,7 @@ installPackages()
     echo
     echo " => Installing additional software packages for image processing and file server:"
     echo
-    sudo apt-get install -y git curl samba lockfile-progs imagemagick \
+    sudo apt-get install -y git curl samba smbclient apg lockfile-progs imagemagick \
         zbar-tools poppler-utils libtiff-tools scantailor sane-utils openbsd-inetd \
 		libconfuse-common libconfuse2 scanbd
     # disable conflicting inetd config
@@ -183,8 +183,10 @@ EOF
 # interactive function for setting the samba share password
 add_samba_user()
 {
+    local pass; pass="$(apg -m 11 -n 1)"
+    sudo sh -c "(echo $pass; echo $pass) | smbpasswd -s -L -a $SCANUSER"
     echo
-    echo "Please specify a password for newly created user '$SCANUSER'"\
+    echo "Created SAMBA user '$SCANUSER' with password '$pass' "\
          "in workgroup '$SMB_WORKGROUP'."
     echo "Use it to connect to the new windows network share"
     echo
@@ -192,9 +194,7 @@ add_samba_user()
     echo
     echo "where all scanned documents will be stored."
     echo
-    for _ in seq 1 3; do sudo smbpasswd -L -a "$SCANUSER" && break; done
-    echo
-    echo " => To update the password later on, run:"
+    echo " => To change the password later on, run:"
     echo
     echo "    sudo smbpasswd -L -a $SCANUSER"
     echo "    sudo service smbd restart"
