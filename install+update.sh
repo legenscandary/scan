@@ -6,6 +6,7 @@ SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 SCANBD_DIR="/etc/scanbd"
 SCANBD_SCRIPTS="$SCANBD_DIR/scripts"
+SANE_CFG_PATH="/etc/sane.d"
 REPO_PATH="$SCANBD_SCRIPTS/legenscandary"
 CFGFN="scan.conf"
 CFGPATH="$REPO_PATH/$CFGFN"
@@ -234,7 +235,7 @@ configSys()
         echo "scanbd config path '$SCANBD_DIR' not found!"
         return 1
     fi
-       # create dummy saned config for scanbd to prevent warning msg
+    # create dummy saned config for scanbd to prevent warning msg
     [ -f "$SCANBD_DIR/saned.conf" ] || sudo touch "$SCANBD_DIR/saned.conf"
     # create script to be called on button press
     local scriptPath="$SCANBD_SCRIPTS/test.script"
