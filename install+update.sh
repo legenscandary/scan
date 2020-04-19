@@ -10,7 +10,6 @@ SANE_CFG_PATH="/etc/sane.d"
 REPO_PATH="$SCANBD_SCRIPTS/legenscandary"
 CFGFN="scan.conf"
 CFGPATH="$REPO_PATH/$CFGFN"
-REPO_URL='https://github.com/legenscandary/scan.git'
 SMBPASSFN="/etc/samba/smbpasswd"
 
 # tests if a user with the provided name exists
@@ -57,6 +56,8 @@ SCANUSER=legenscandary
 OUT_SUBDIR=scans
 # samba workgroup
 SMB_WORKGROUP=WORKGROUP
+# GIT repository for getting updates
+REPO_URL='https://github.com/legenscandary/scan.git'
 
 EOF
         sudo mv "$tmpfn" "$CFGPATH"
@@ -321,16 +322,23 @@ updateScripts()
     fi
     cd "$REPO_PATH" || return
     local installScript; installScript="$REPO_PATH/$(basename "$SCRIPT_PATH")"
+    loadConfig # this creates config file in repo dir if missing
 
     if [ -d ".git" ]; then # a git repo yet, update scripts?
         # stash dirty work dir first
         [ -z "$(git config user.name)" ] && git config user.name "$USER"
         [ -z "$(git config user.email)" ] && git config user.email "$USER@$(hostname)"
         git stash save
-        # update work dir
-        git pull
+        git pull       # update work dir
     elif [ ! -f "$installScript" ]; then # empty dir possibly
-        git clone $REPO_URL .
+        if [ -z "$REPO_URL" ]; then
+            echo "Repository URL empty! Nothing to do."
+        else # clone, but it must be empty
+            local tmpdir; tmpdir="$(mktemp -d)"
+            find . -maxdepth 1 -mindepth 1 -exec sudo mv {} "$tmpdir/" \;
+            git clone $REPO_URL .
+            mv "$tmpdir/"* .; rmdir "$tmpdir"
+        fi
     fi
     if [ ! -f "$installScript" ]; then # fall back to default name, e.g. if called from pipe
         installScript="$REPO_PATH/install+update.sh"
