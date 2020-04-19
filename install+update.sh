@@ -186,11 +186,11 @@ add_samba_user()
     local pass; pass="$(apg -m 11 -n 1)"
     sudo sh -c "(echo $pass; echo $pass) | smbpasswd -s -L -a $SCANUSER"
     echo
-    echo "Created SAMBA user '$SCANUSER' with password '$pass' "\
+    echo "Created SAMBA user '$SCANUSER' with password '$pass'"\
          "in workgroup '$SMB_WORKGROUP'."
     echo "Use it to connect to the new windows network share"
     echo
-    echo "    \\\\$(hostname)\\$OUT_SUBDIR"
+    echo "    \\\\$(hostname -f)\\$OUT_SUBDIR"
     echo
     echo "where all scanned documents will be stored."
     echo
@@ -327,7 +327,7 @@ updateScripts()
     if [ -d ".git" ]; then # a git repo yet, update scripts?
         # stash dirty work dir first
         [ -z "$(git config user.name)" ] && git config user.name "$USER"
-        [ -z "$(git config user.email)" ] && git config user.email "$USER@$(hostname)"
+        [ -z "$(git config user.email)" ] && git config user.email "$USER@$(hostname -f)"
         git stash save
         git pull       # update work dir
     elif [ ! -f "$installScript" ]; then # empty dir possibly
