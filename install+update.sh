@@ -366,4 +366,4 @@ main()
 LOGFILE="${SCRIPT_PATH%.*}_$(getts).log"
 main "$@" 2>&1 | tee "$LOGFILE"
 
-# vim: set ts=4 sts=4 sw=4 tw=0:
+# vim: set ts=4 sts=4 sw=4 tw=0 et:
