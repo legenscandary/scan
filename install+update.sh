@@ -88,7 +88,13 @@ installPackages()
     sudo update-inetd --disable sane-port # inetd not needed, all handled by systemd
     sudo service inetd restart
 
-
+    # use default config provided by sane instead (where parport devices are disabled)
+    sudo systemctl stop scanbd
+    # use SANE config if there is more than the 'net' backend enabled, see configSys() as well
+    if ! isSANEconfigNetworkOnly; then
+        sudo cp /etc/sane.d/dll.conf "$SCANBD_DIR/"
+    fi
+    sudo systemctl start scanbd
 
     echo
     echo " => Installing selected OCR packages:"
