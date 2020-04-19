@@ -65,6 +65,12 @@ EOF
     userExists "$SCANUSER" && sudo chown -R "$SCANUSER.scanner" "$REPO_PATH"
 }
 
+isSANEconfigNetworkOnly()
+{
+    local dll_conf; dll_conf="$SANE_CFG_PATH/dll.conf"
+    [ -f "$dll_conf" ] && [ -z "$(grep -v '^\s*net\s*$' "$dll_conf" | tr -d [:space:])" ]
+}
+
 installPackages()
 {
     echo
@@ -208,7 +214,7 @@ configSys()
             sudo mkdir -p dll.disabled && sudo mv dll.d/* dll.disabled/
         fi
         # make sure only the net backend is enabled in sane config, disable original config
-        [ -z "$(grep -v net dll.conf | tr -d [:space:])" ] || sudo mv dll.conf "dll.disabled_$(getts).conf"
+        isSANEconfigNetworkOnly || sudo mv dll.conf "dll.disabled_$(getts).conf"
         sudo sh -c 'echo net > dll.conf'
         # configure sanes net backend, make sure required settings are present
         local netcfgfn="net.conf" # configure net-backend
