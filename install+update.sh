@@ -64,7 +64,9 @@ EOF
         sudo chmod 644 "$CFGPATH"
     fi
     source "$CFGPATH"
-    userExists "$SCANUSER" && sudo chown -R "$SCANUSER.saned" "$REPO_PATH"
+    userExists "$SCANUSER" \
+        && [ -d "$REPO_PATH" ] \
+        && sudo chown -R "$SCANUSER.saned" "$REPO_PATH"
 }
 
 #isSANEconfigNetworkOnly()
@@ -101,7 +103,7 @@ installPackages()
     echo
     [ -z "$DOC_LANG" ] && DOC_LANG="eng" # minimal language, updated from config file later
     tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
-    sudo apt-get install -y -t testing tesseract-ocr $tess_lang_packs
+    sudo apt-get install -y -t testing tesseract-ocr libgcc-8-dev $tess_lang_packs
 }
 
 cfg()
@@ -343,10 +345,12 @@ updateScripts()
         if [ -z "$REPO_URL" ]; then
             echo "Repository URL empty! Nothing to do."
         else # clone, but it must be empty
+            sudo chown "$USER" .
             local tmpdir; tmpdir="$(mktemp -d)"
             find . -maxdepth 1 -mindepth 1 -exec sudo mv {} "$tmpdir/" \;
             git clone $REPO_URL .
             mv "$tmpdir/"* .; rmdir "$tmpdir"
+            sudo chown -R "$SCANUSER.saned" .
         fi
     fi
     if [ ! -f "$installScript" ]; then # fall back to default name, e.g. if called from pipe
