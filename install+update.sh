@@ -64,14 +64,14 @@ EOF
         sudo chmod 644 "$CFGPATH"
     fi
     source "$CFGPATH"
-    userExists "$SCANUSER" && sudo chown -R "$SCANUSER.scanner" "$REPO_PATH"
+    userExists "$SCANUSER" && sudo chown -R "$SCANUSER.saned" "$REPO_PATH"
 }
 
-isSANEconfigNetworkOnly()
-{
-    local dll_conf; dll_conf="$SANE_CFG_PATH/dll.conf"
-    [ -f "$dll_conf" ] && [ -z "$(grep -v '^\s*net\s*$' "$dll_conf" | tr -d [:space:])" ]
-}
+#isSANEconfigNetworkOnly()
+#{
+#    local dll_conf; dll_conf="$SANE_CFG_PATH/dll.conf"
+#    [ -f "$dll_conf" ] && [ -z "$(grep -v '^\s*net\s*$' "$dll_conf" | tr -d [:space:])" ]
+#}
 
 installPackages()
 {
@@ -87,19 +87,14 @@ installPackages()
     echo " => Installing additional software packages for image processing and file server:"
     echo
     sudo apt-get install -y git curl samba smbclient apg lockfile-progs imagemagick \
-        zbar-tools poppler-utils libtiff-tools scantailor sane-utils openbsd-inetd \
-		libconfuse-common libconfuse2 scanbd
-    # disable conflicting inetd config
-    sudo update-inetd --disable sane-port # inetd not needed, all handled by systemd
-    sudo service inetd restart
+        zbar-tools poppler-utils libtiff-tools scantailor sane-utils scanbd
+        # openbsd-inetd libconfuse-common libconfuse2
+#    # disable conflicting inetd config
+#    sudo update-inetd --disable sane-port # inetd not needed, all handled by systemd
+#    sudo service inetd restart
 
-    # use default config provided by sane instead (where parport devices are disabled)
+    # stop scanbd for buggy config, starts later after config
     sudo systemctl stop scanbd
-    # use SANE config if there is more than the 'net' backend enabled, see configSys() as well
-    if ! isSANEconfigNetworkOnly; then
-        sudo cp /etc/sane.d/dll.conf "$SCANBD_DIR/"
-    fi
-    sudo systemctl start scanbd
 
     echo
     echo " => Installing selected OCR packages:"
@@ -205,6 +200,13 @@ add_samba_user()
     sudo service smbd restart
 }
 
+# working config on raspbian 10 (buster):
+# - sane with full default `dll.conf`
+# - scanbd: copy over `/etc/sane.d/dll.conf` without `net` backend
+#   - `/etc/scanbd/scanbd.conf`: user group has to be `saned`
+#     (scanner not found otherwise)
+#   - dropping privileges to user specified in /etc/scanbd/scanbd.conf works now
+# - test with `whoami` and `scanimage -L` in /etc/scanbd/scripts/test.script
 configSys()
 {
     local tmpfn
@@ -212,27 +214,27 @@ configSys()
     echo " => Configuring the system:"
     if ! userExists "$SCANUSER"; then
         echo " => Creating user '$SCANUSER' ..."
-        sudo adduser --system --ingroup scanner --disabled-login --shell=/bin/false "$SCANUSER"
+        sudo adduser --system --ingroup saned --disabled-login --shell=/bin/false "$SCANUSER"
         sudo -u "$SCANUSER" sh -c "cd; mkdir $OUT_SUBDIR"
     fi
     # assuming user exists now, create OUT_DIR
     OUT_DIR="$(sudo -u "$SCANUSER" sh -c "cd;
         mkdir -p '$OUT_SUBDIR'; cd '$OUT_SUBDIR'; pwd" 2> /dev/null)"
     # configure sane, let it use the net backend only, in favor of scanbd/scanbm
-    if cd /etc/sane.d/; then
-        if [ -z "$(find dll.d -type d -empty)" ]; then
-            # move external sane config files somewhere else if there are any
-            sudo mkdir -p dll.disabled && sudo mv dll.d/* dll.disabled/
-        fi
-        # make sure only the net backend is enabled in sane config, disable original config
-        isSANEconfigNetworkOnly || sudo mv dll.conf "dll.disabled_$(getts).conf"
-        sudo sh -c 'echo net > dll.conf'
-        # configure sanes net backend, make sure required settings are present
-        local netcfgfn="net.conf" # configure net-backend
-        grep -q legenscandary "$netcfgfn" || sudo sh -c "echo '## configuration by legenscandary:' >> $netcfgfn"
-        grep -q '^connect_timeout' "$netcfgfn" || sudo sh -c "echo 'connect_timeout = 3' >> $netcfgfn"
-        grep -q '^localhost' "$netcfgfn" || sudo sh -c "echo 'localhost' >> $netcfgfn"
-    fi
+#    if cd /etc/sane.d/; then
+#        if [ -z "$(find dll.d -type d -empty)" ]; then
+#            # move external sane config files somewhere else if there are any
+#            sudo mkdir -p dll.disabled && sudo mv dll.d/* dll.disabled/
+#        fi
+#        # make sure only the net backend is enabled in sane config, disable original config
+#        isSANEconfigNetworkOnly || sudo mv dll.conf "dll.disabled_$(getts).conf"
+#        sudo sh -c 'echo net > dll.conf'
+#        # configure sanes net backend, make sure required settings are present
+#        local netcfgfn="net.conf" # configure net-backend
+#        grep -q legenscandary "$netcfgfn" || sudo sh -c "echo '## configuration by legenscandary:' >> $netcfgfn"
+#        grep -q '^connect_timeout' "$netcfgfn" || sudo sh -c "echo 'connect_timeout = 3' >> $netcfgfn"
+#        grep -q '^localhost' "$netcfgfn" || sudo sh -c "echo 'localhost' >> $netcfgfn"
+#    fi
     # configure scanbd
     echo " => Setting up scanbd ..."
     if [ ! -d "$SCANBD_DIR" ]; then
@@ -241,6 +243,9 @@ configSys()
     fi
     # create dummy saned config for scanbd to prevent warning msg
     [ -f "$SCANBD_DIR/saned.conf" ] || sudo touch "$SCANBD_DIR/saned.conf"
+    # replace buggy scanbd dll.conf (contains parport devices) with one from sane, w/o net backend
+    sudo cp -v /etc/sane.d/dll.conf "$SCANBD_DIR"/ && \
+    sudo sed -i -e 's/^\(net\)/#\3 # disabled for use with scanbd/' "$SCANBD_DIR/dll.conf"
     # create script to be called on button press
     local scriptPath="$SCANBD_SCRIPTS/test.script"
     sudo mkdir -p "$SCANBD_SCRIPTS"
@@ -254,15 +259,16 @@ EOF
     chmod 755 "$tmpfn"
     sudo mv "$tmpfn" "$scriptPath"
     sudo chown root.root "$scriptPath"
-    sudo chown -R "$SCANUSER.scanner" "$SCRIPT_DIR" # let the user own it who runs the script
+    sudo chown -R "$SCANUSER.saned" "$SCRIPT_DIR" # let the user own it who runs the script
     # change default user to root in scanbd.conf
-    # when set to user, script is run as root anyway from test.script, bug?
-    sudo sed -i -e 's/^\(\s*user\s*=\s*\)\([a-z]\+\)/\1root/' "$SCANBD_DIR/scanbd.conf"
+    sudo sed -i -e 's/^\(\s*user\s*=\)\s*\w\+$/\1 '$SCANUSER'/' "$SCANBD_DIR/scanbd.conf"
+    # set group in scanbd config
+    sudo sed -i -e 's/^\(\s*group\s*=\)\s*\w\+$/\1 saned/' "$SCANBD_DIR/scanbd.conf"
     # restart scanbd automatically on exit/segfault
-    sudo sed -i -e '/\[Service\]/ aRestart=always' \
-                -e '/\[Service\]/ aRestartSec=5' \
-                -e 's/\(^Also.\+scanbm.socket\)/#\1/g' \
-                   "/lib/systemd/system/scanbd.service"
+    local scanbd_svc; scanbd_svc="/lib/systemd/system/scanbd.service"
+    grep -q 'Restart=always' "$scanbd_svc" || sudo sed -i -e '/\[Service\]/ aRestart=always' "$scanbd_svc"
+    grep -q 'RestartSec=5'   "$scanbd_svc" || sudo sed -i -e '/\[Service\]/ aRestartSec=5'   "$scanbd_svc"
+    sudo sed -i -e 's/\(^Also.\+scanbm.socket\)/#\1/g' "$scanbd_svc"
     sudo systemctl stop scanbm.socket
     sudo systemctl disable scanbm.socket
     sudo systemctl daemon-reload
