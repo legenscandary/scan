@@ -78,6 +78,9 @@ installPackages()
     echo
     echo " => Updating system packages:"
     echo
+    sudo sh -c "echo 'deb http://raspbian.raspberrypi.org/raspbian/ testing main contrib non-free rpi'"\
+               "  > /etc/apt/sources.list.d/testing.list"
+    sudo sh -c "echo 'APT::Default-Release \"stable\";' > /etc/apt/apt.conf.d/99default_release"
     sudo apt-get update -y
     sudo apt-get dist-upgrade -y
     echo
@@ -103,7 +106,7 @@ installPackages()
     echo
     [ -z "$DOC_LANG" ] && DOC_LANG="eng" # minimal language, updated from config file later
     tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
-    sudo apt-get install -y tesseract-ocr $tess_lang_packs
+    sudo apt-get install -y -t testing tesseract-ocr $tess_lang_packs
 }
 
 cfg()
