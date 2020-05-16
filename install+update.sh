@@ -247,7 +247,7 @@ configSys()
     [ -f "$SCANBD_DIR/saned.conf" ] || sudo touch "$SCANBD_DIR/saned.conf"
     # replace buggy scanbd dll.conf (contains parport devices) with one from sane, w/o net backend
     sudo cp -v /etc/sane.d/dll.conf "$SCANBD_DIR"/ && \
-    sudo sed -i -e 's/^\(net\)/#\3 # disabled for use with scanbd/' "$SCANBD_DIR/dll.conf"
+    sudo sed -i -e 's/^\(net\)/#\1 # disabled for use with scanbd/' "$SCANBD_DIR/dll.conf"
     # create script to be called on button press
     local scriptPath="$SCANBD_SCRIPTS/test.script"
     sudo mkdir -p "$SCANBD_SCRIPTS"
