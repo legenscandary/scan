@@ -1,3 +1,4 @@
 .*.swp
 *.conf
 *.log
+.ipynb_checkpoints
