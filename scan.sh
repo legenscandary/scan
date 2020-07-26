@@ -598,6 +598,10 @@ main()
     if [ "$CMD" = "sheets" ]; then
         # for any arguments provided, create available qr command sheets
         eval createCommandSheets "$(timestamp command-sheets)"
+    elif [ "$CMD" = "process" ]; then
+		# process given document dir (can be used if earlier process of this doc was killed)
+		shift
+		processDoc $@
     else
         eval batchScan "$(timestamp $SCAN_PREFIX)"
         # do not wait, this would include processing of all documents as well
@@ -611,6 +615,6 @@ main()
     rm -f "$TIMESTAMPFN"
 }
 
-main
+main $@
 
 # vim: set ts=4 sts=4 sw=4 tw=0:
