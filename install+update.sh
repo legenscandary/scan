@@ -56,6 +56,9 @@ SCANUSER=legenscandary
 OUT_SUBDIR=scans
 # samba workgroup
 SMB_WORKGROUP=WORKGROUP
+# 1: resets any custom changes to samba config after install
+# 0: do not touch the samba config after install
+SMB_RESET=1
 # GIT repository for getting updates
 REPO_URL='https://github.com/legenscandary/scan.git'
 
@@ -292,14 +295,16 @@ EOF
     sudo mv "$tmpfn" "$cronPath"
     sudo chown root.root "$cronPath"
 
-    # configure samba with a share for the OUT_DIR
-    echo " => Configuring the samba file server:"
-    echo
-    sambacfg="/etc/samba/smb.conf"
-    sudo mv "$sambacfg" "$sambacfg.bckp_$(getts)"
-    configSamba > "$tmpfn"
-    sudo mv "$tmpfn" "$sambacfg"
-    sudo chown root.root "$sambacfg"
+    if [ "$SMB_RESET" -ne 0 ]; then
+        # configure samba with a share for the OUT_DIR
+        echo " => Configuring the samba file server:"
+        echo
+        sambacfg="/etc/samba/smb.conf"
+        sudo mv "$sambacfg" "$sambacfg.bckp_$(getts)"
+        configSamba > "$tmpfn"
+        sudo mv "$tmpfn" "$sambacfg"
+        sudo chown root.root "$sambacfg"
+    fi
     # measure elapsed time before user input
     install_end_ts=$(date +%s)
     # create samba user if it does not exist yet
