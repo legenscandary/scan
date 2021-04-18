@@ -107,6 +107,8 @@ installPackages()
     [ -z "$DOC_LANG" ] && DOC_LANG="eng" # minimal language, updated from config file later
     tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
     sudo apt-get install -y -t testing tesseract-ocr libgcc-8-dev $tess_lang_packs
+    # remove the previously added testing source to avoid trouble with apt and pckg dependencies
+    rm -f "/etc/apt/sources.list.d/testing.list"
 }
 
 cfg()
