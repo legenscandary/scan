@@ -25,6 +25,16 @@ Special command sheets allow to switch between different modes of operation:
 - When another command sheet is encountered, a new PDF file is created
 to contain the next sequence of pages.
 
+### Generate command sheets
+
+The required command sheets (piece of paper with a QR code on it) can be generated
+by the following command:
+
+    $ ./scan.sh sheets
+
+They will be appear as PDF files on the network/samba share in a folder named
+`command-sheets` and need to be printed on paper, preferrably black and white.
+
 ## Supported Scanners
 
 - Fujitsu ScanSnap iX500
