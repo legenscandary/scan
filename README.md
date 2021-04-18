@@ -94,9 +94,9 @@ and the GPU with passive cooling only. A small simple fan reduced it to approx. 
 
 ## Installation
 
-*put direct link here*
+    $ curl -s https://raw.githubusercontent.com/legenscandary/scan/master/install%2Bupdate.sh | bash
 
-takes approx 30 min on rpi 2, depends on network speed for package updates as well
+It needs approx 30 min on Rpi 2, depends on network speed for package updates as well
 
 ## Support and Contact
 
