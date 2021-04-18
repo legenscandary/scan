@@ -94,6 +94,11 @@ installPackages()
     sudo apt-get install -y git curl samba smbclient apg lockfile-progs imagemagick \
         zbar-tools poppler-utils libtiff-tools scantailor sane-utils scanbd qrencode
         # openbsd-inetd libconfuse-common libconfuse2
+    echo
+    echo " => Installing additional software packages generating command sheets with LaTeX:"
+    echo
+    sudo apt-get install -y texlive-extra-utils texlive-fonts-recommended texlive-latex-extra \
+        texlive-lang-english texlive-lang-german texlive-lang-french
 #    # disable conflicting inetd config
 #    sudo update-inetd --disable sane-port # inetd not needed, all handled by systemd
 #    sudo service inetd restart
