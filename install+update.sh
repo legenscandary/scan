@@ -95,8 +95,7 @@ installPackages()
     echo " => Installing additional software packages for image processing and file server:"
     echo
     sudo apt-get install -y git curl samba smbclient apg lockfile-progs imagemagick \
-        zbar-tools poppler-utils libtiff-tools scantailor sane-utils scanbd qrencode
-        # openbsd-inetd libconfuse-common libconfuse2
+        zbar-tools ghostscript poppler-utils libtiff-tools sane-utils scanbd qrencode
     echo
     echo " => Installing additional software packages generating command sheets with LaTeX:"
     echo
