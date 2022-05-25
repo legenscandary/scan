@@ -80,14 +80,17 @@ EOF
 
 installPackages()
 {
+    local listfn="/etc/apt/sources.list.d/scantailor.list"
     echo
     echo " => Updating system packages:"
     echo
-    sudo sh -c "echo 'deb http://raspbian.raspberrypi.org/raspbian/ testing main contrib non-free rpi'"\
-               "  > /etc/apt/sources.list.d/testing.list"
-    sudo sh -c "echo 'APT::Default-Release \"stable\";' > /etc/apt/apt.conf.d/99default_release"
     sudo apt-get update -y
     sudo apt-get dist-upgrade -y
+    echo
+    echo " => Installing ScanTailor for pre-processing scans:"
+    echo
+    sudo sh -c "echo 'deb http://ports.ubuntu.com/ bionic main restricted universe multiverse' > $listfn"
+    sudo apt-get install -y scantailor
     echo
     echo " => Installing additional software packages for image processing and file server:"
     echo
@@ -113,7 +116,7 @@ installPackages()
     tess_lang_packs="$(IFS='+'; for l in $DOC_LANG; do echo tesseract-ocr-$l; done)"
     sudo apt-get install -y -t testing tesseract-ocr libgcc-8-dev $tess_lang_packs
     # remove the previously added testing source to avoid trouble with apt and pckg dependencies
-    rm -f "/etc/apt/sources.list.d/testing.list"
+    rm -f "$listfn"
 }
 
 cfg()
