@@ -350,11 +350,13 @@ updateScripts()
     loadConfig # this creates config file in repo dir if missing
 
     if [ -d ".git" ]; then # a git repo yet, update scripts?
+        sudo chown -R root.root .
         # stash dirty work dir first
         [ -z "$(git config user.name)" ] && git config user.name "$USER"
         [ -z "$(git config user.email)" ] && git config user.email "$USER@$(hostname -f)"
         git stash save
         git pull       # update work dir
+        git stash pop
     elif [ ! -f "$installScript" ]; then # empty dir possibly
         if [ -z "$REPO_URL" ]; then
             echo "Repository URL empty! Nothing to do."
