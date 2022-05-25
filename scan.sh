@@ -21,6 +21,7 @@ CMD="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 SCAN_PREFIX="scan"
 # command to replace illegal file name chars (Windows) by underscore (renameByContent())
 SANITIZE='tr "/\\\\?<>:*|&" _'
+PYTHON="python3"
 
 delIntermediate()
 {
@@ -125,10 +126,10 @@ classifyImg()
     local testRatio=0.14 # percentage of nominal pixel count of an A4 page to keep
     # get pixel count in given image
     local pixcount; pixcount="$(convert "$infn" -format "%[fx:w*h]" info:)"
-    pixcount="$(python -c "print(int($pixcount))")"
+    pixcount="$($PYTHON -c "print(int($pixcount))")"
     # calculate target pixel count, approx. 1.2M for 300dpi
     local pixcountMax=1200000 # always same number, calculus below for reference
-    [ -z "$pixcountMax" ] && pixcountMax="$(python -c "print(int(
+    [ -z "$pixcountMax" ] && pixcountMax="$($PYTHON -c "print(int(
         ($RESOLUTION*210./25.4) * ($RESOLUTION*297./25.4) * $testRatio))")"
     local resizecmd=""
     if [ ! -z "$pixcount" ] && [ ! -z "$pixcountMax" ] \
@@ -146,7 +147,7 @@ classifyImg()
     read pixcount geom < <(convert "$cropfn" \
         -virtual-pixel White -blur 0x10 -fuzz 15% -trim \
         -format "%[fx:w*h] %[fx:w]x%[fx:h]+%[fx:page.x]+%[fx:page.y]" info: 2>/dev/null)
-    pixcount="$(python -c "print(int($pixcount))")"
+    pixcount="$($PYTHON -c "print(int($pixcount))")"
     printf "#pix %d, geom: %s -> " "$pixcount" "$geom"
     local move="mv"
     if [ ! -z "$pixcount" ] && [ "$pixcount" -lt 100 ]; then
@@ -232,7 +233,7 @@ EOF
         #docdate="$(egrep -o '[0-9]?[0-9]\.[0-9]?[0-9]\.[0-9]?[0-9]?[0-9][0-9]' $textfn | head -n 1)"
         local regex='[^0-9]([0-9]?[0-9])[-/\. ]([0-9]?[0-9])[-/\. ]([0-9]?[0-9]?[0-9][0-9])'
         [[ "$(cat "$textfn")" =~ $regex ]]
-        [ -z "$BASH_REMATCH" ] || docdate="$(python -c "$pydateconv" \
+        [ -z "$BASH_REMATCH" ] || docdate="$($PYTHON -c "$pydateconv" \
             "${BASH_REMATCH[3]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[1]}")"
         # prepending date in iso format, if any
         [ -z "$docdate" ] || word="$docdate $word"
