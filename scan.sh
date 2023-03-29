@@ -315,6 +315,7 @@ processDoc()
     local ts="$3"
     [ -z "$docdir" ] && return # ignore missing doc dir, happens on startup
     echo "processDoc $*"
+    renice 5 -u "$(whoami)" # lower process priority, this may take a while
     # check if given document exists
     if [ ! -d "$docdir" ]; then
         echo "processDoc: Given document dir '$docdir' does not exist!"
