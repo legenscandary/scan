@@ -171,6 +171,7 @@ configSamba()
     content="$(cfg "domain master" yes "bind interfaces only")"
     content="$(cfg "passdb backend" "smbpasswd:$SMBPASSFN" "server role")"
     content="$(cfg "unix password sync" yes "passdb backend")"
+    content="$(cfg "passwd program" "/usr/bin/passwd %u" "unix password sync")"
     content="$(cfg "unix extensions" no "unix")"
     content="$(cfg security user usershare)"
     content="$(cfg "encrypt passwords" yes security)"
