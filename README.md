@@ -114,5 +114,5 @@ The contributor retains the copyright.
 Legenscandary is licensed under the GNU General Public License, v3.
 A copy of this license is included in the file [LICENSE](LICENSE).
 
-Copyright 2015-2019, Ingo Breßler.
+Copyright 2015-2024, Ingo Breßler.
 
