@@ -81,16 +81,26 @@ EOF
 installPackages()
 {
     local listfn="/etc/apt/sources.list.d/scantailor.list"
+    set -x 
+    echo
+    echo " => Add ScanTailor sources for pre-processing scans:"
+    echo
+    sudo sh -c "echo 'deb http://ports.ubuntu.com/ bionic main restricted universe multiverse' > $listfn"
+    tmpfn="$(mktemp)"
+    sudo apt-get update 2>&1 | sed -En 's/.*NO_PUBKEY ([[:xdigit:]]+).*/\1/p' | sort -u > "${tmpfn}"
+    # store the new key in /usr/share/keyrings/
+    cat "${tmpfn}" | xargs sudo gpg --keyserver "hkps://keyserver.ubuntu.com:443" --recv-keys
+    cat "${tmpfn}" | xargs -L 1 sh -c 'sudo gpg --yes --output "/etc/apt/keyrings/$1.gpg" --export "$1"' sh
+    sudo sh -c "echo 'deb [signed-by=/etc/apt/keyrings/$(cat "${tmpfn}" | tr -d [:space:]).gpg] http://ports.ubuntu.com/ bionic main restricted universe multiverse' > $listfn"
+    rm "${tmpfn}"
+
     echo
     echo " => Updating system packages:"
     echo
     sudo apt-get update -y
     sudo apt-get dist-upgrade -y
-    echo
-    echo " => Installing ScanTailor for pre-processing scans:"
-    echo
-    sudo sh -c "echo 'deb http://ports.ubuntu.com/ bionic main restricted universe multiverse' > $listfn"
     sudo apt-get install -y scantailor
+
     echo
     echo " => Installing additional software packages for image processing and file server:"
     echo
