@@ -30,7 +30,7 @@ to contain the next sequence of pages.
 The required command sheets (piece of paper with a QR code on it) can be generated
 by the following command:
 
-    $ ./scan.sh sheets
+    ./scan.sh sheets
 
 They will be appear as PDF files on the network/samba share in a folder named
 `command-sheets` and need to be printed on paper, preferrably black and white.
@@ -94,7 +94,7 @@ and the GPU with passive cooling only. A small simple fan reduced it to approx. 
 
 ## Installation
 
-    $ curl -s https://raw.githubusercontent.com/legenscandary/scan/master/install%2Bupdate.sh | bash
+    curl -s https://raw.githubusercontent.com/legenscandary/scan/master/install%2Bupdate.sh | bash
 
 It needs approx 30 min on Rpi 2, depends on network speed for package updates as well
 
