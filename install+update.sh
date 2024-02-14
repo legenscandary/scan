@@ -362,13 +362,14 @@ updateScripts()
     loadConfig # this creates config file in repo dir if missing
 
     if [ -d ".git" ]; then # a git repo yet, update scripts?
-        sudo chown -R root.root .
+        sudo chown -R "$USER" .
         # stash dirty work dir first
         [ -z "$(git config user.name)" ] && git config user.name "$USER"
         [ -z "$(git config user.email)" ] && git config user.email "$USER@$(hostname -f)"
         git stash save
         git pull       # update work dir
         git stash pop
+        userExists "$SCANUSER" && sudo chown -R "$SCANUSER:saned" .
     elif [ ! -f "$installScript" ]; then # empty dir possibly
         if [ -z "$REPO_URL" ]; then
             echo "Repository URL empty! Nothing to do."
@@ -376,7 +377,7 @@ updateScripts()
             sudo chown "$USER" .
             local tmpdir; tmpdir="$(mktemp -d)"
             find . -maxdepth 1 -mindepth 1 -exec sudo mv {} "$tmpdir/" \;
-            git clone $REPO_URL .
+            git clone "$REPO_URL" .
             mv "$tmpdir/"* .; rmdir "$tmpdir"
             sudo chown -R "$SCANUSER:saned" .
         fi
