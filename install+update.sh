@@ -69,7 +69,7 @@ EOF
     source "$CFGPATH"
     userExists "$SCANUSER" \
         && [ -d "$REPO_PATH" ] \
-        && sudo chown -R "$SCANUSER.saned" "$REPO_PATH"
+        && sudo chown -R "$SCANUSER:saned" "$REPO_PATH"
 }
 
 #isSANEconfigNetworkOnly()
@@ -274,8 +274,8 @@ logger -t "scanbd: \$0" "End   of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
 EOF
     chmod 755 "$tmpfn"
     sudo mv "$tmpfn" "$scriptPath"
-    sudo chown root.root "$scriptPath"
-    sudo chown -R "$SCANUSER.saned" "$SCRIPT_DIR" # let the user own it who runs the script
+    sudo chown root:root "$scriptPath"
+    sudo chown -R "$SCANUSER:saned" "$SCRIPT_DIR" # let the user own it who runs the script
     # change default user to root in scanbd.conf
     sudo sed -i -e 's/^\(\s*user\s*=\)\s*\w\+$/\1 '$SCANUSER'/' "$SCANBD_DIR/scanbd.conf"
     # set group in scanbd config
@@ -304,7 +304,7 @@ EOF
     chmod 755 "$tmpfn"
     local cronPath="/etc/cron.daily/legenscandary"
     sudo mv "$tmpfn" "$cronPath"
-    sudo chown root.root "$cronPath"
+    sudo chown root:root "$cronPath"
 
     if [ "$SMB_RESET" -ne 0 ]; then
         # configure samba with a share for the OUT_DIR
@@ -314,7 +314,7 @@ EOF
         sudo mv "$sambacfg" "$sambacfg.bckp_$(getts)"
         configSamba > "$tmpfn"
         sudo mv "$tmpfn" "$sambacfg"
-        sudo chown root.root "$sambacfg"
+        sudo chown root:root "$sambacfg"
     fi
     # measure elapsed time before user input
     install_end_ts=$(date +%s)
@@ -368,7 +368,7 @@ updateScripts()
             find . -maxdepth 1 -mindepth 1 -exec sudo mv {} "$tmpdir/" \;
             git clone $REPO_URL .
             mv "$tmpdir/"* .; rmdir "$tmpdir"
-            sudo chown -R "$SCANUSER.saned" .
+            sudo chown -R "$SCANUSER:saned" .
         fi
     fi
     if [ ! -f "$installScript" ]; then # fall back to default name, e.g. if called from pipe
