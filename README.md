@@ -66,7 +66,7 @@ on top, so that the outcome is again a PDF of the same content.
 individual documents (no command sheet), hence resulting in 2 pages per PDF
 (no blank pages included).
 
-### Raspberry Pi 2B
+### Raspberry Pi 2B (1G RAM)
 
 |                          |   median (secs) |   mean (secs) |   ± (secs) |   #runs |
 |:-------------------------|----------------:|--------------:|-----------:|--------:|
@@ -86,10 +86,10 @@ and the GPU with passive cooling only. A small simple fan reduced it to approx. 
 
 ## Makes Use of
 
-- SANE
-- scantailor
-- tesseract
-- ghostscript
+- [SANE](http://sane-project.org/)
+- [ScanTailor](https://github.com/scantailor/scantailor/tree/master?tab=readme-ov-file#about)
+- [Tesseract OCR](https://tesseract-ocr.github.io/tessdoc/#introduction)
+- [Ghostscript](https://www.ghostscript.com/)
 - many more command line tools
 
 ## Installation
