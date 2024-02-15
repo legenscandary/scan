@@ -206,7 +206,7 @@ EOF
 add_samba_user()
 {
     local pass; pass="$(apg -m 11 -n 1)"
-    sudo sh -c "(echo $pass; echo $pass) | smbpasswd -s -L -a $SCANUSER"
+    sudo sh -c "(echo "$pass"; echo "$pass") | smbpasswd -s -L -a $SCANUSER"
     echo
     echo "Created SAMBA user '$SCANUSER' with password '$pass'"\
          "in workgroup '$SMB_WORKGROUP'."
