@@ -81,7 +81,7 @@ EOF
 installPackages()
 {
     local listfn="/etc/apt/sources.list.d/scantailor.list"
-    set -x 
+    # set -x # for debugging
     echo
     echo " => Add ScanTailor sources for pre-processing scans:"
     echo
