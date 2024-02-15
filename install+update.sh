@@ -238,7 +238,8 @@ configSys()
     echo " => Configuring the system:"
     if ! userExists "$SCANUSER"; then
         echo " => Creating user '$SCANUSER' ..."
-        sudo adduser --system --ingroup saned --disabled-login --shell=/bin/false "$SCANUSER"
+        sudo adduser --system --ingroup saned --disabled-login --shell=/bin/false \
+            --home "/home/$SCANUSER" "$SCANUSER"
         sudo -u "$SCANUSER" sh -c "cd; mkdir $OUT_SUBDIR"
     fi
     # assuming user exists now, create OUT_DIR
