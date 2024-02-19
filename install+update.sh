@@ -286,7 +286,7 @@ EOF
     sudo mv "$tmpfn" "$scriptPath"
     sudo chown root:root "$scriptPath"
     sudo chown -R "$SCANUSER:saned" "$SCRIPT_DIR" # let the user own it who runs the script
-    # change default user to root in scanbd.conf
+    # change default user in scanbd.conf
     sudo sed -i -e 's/^\(\s*user\s*=\)\s*\w\+$/\1 '$SCANUSER'/' "$SCANBD_DIR/scanbd.conf"
     # set group in scanbd config
     sudo sed -i -e 's/^\(\s*group\s*=\)\s*\w\+$/\1 saned/' "$SCANBD_DIR/scanbd.conf"
