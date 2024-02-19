@@ -56,22 +56,22 @@ Especially Debian or Ubuntu Linux based systems should work.
 
 The tables below list the processing time per scanned page on average (*mean*)
 with the standard deviation (*±*) and the number of processed documents used
-to calculate this statistic from (*#runs*).  
-**In multi mode**, each PDF
+to calculate this statistic from (*#runs*). The fastest platform is listed first.
+- **In multi mode**, each PDF
 ([doc1](http://journals.iucr.org/j/issues/2015/03/00/vg5017/vg5017.pdf),
  [doc2](http://journals.iucr.org/j/issues/2015/05/00/vg5026/vg5026.pdf))
 was printed out and fed to the scanner as a whole with a *multi* command sheet
 on top, so that the outcome is again a PDF of the same content.  
-**In single mode**, the individual sheets of the test PDFs were processed as
+- **In single mode**, the individual sheets of the test PDFs were processed as
 individual documents (no command sheet), hence resulting in 2 pages per PDF
 (no blank pages included).
 
-#### Raspberry Pi 2B (1G RAM)
+#### Odroid N2Plus (4G RAM)
 
-|                          |   median (secs) |   mean (secs) |   ± (secs) |   #runs |
-|:-------------------------|----------------:|--------------:|-----------:|--------:|
-| single sheet (2 pages)   |             599 |           625 |        154 |       9 |
-| multiple sheets          |            1075 |          1076 |         18 |       6 |
+|                        |   median (secs) |   mean (secs) |   ± (secs) |   #runs |
+|:-----------------------|----------------:|--------------:|-----------:|--------:|
+| single sheet (2 pages) |              18 |            17 |          1 |      17 |
+| multiple sheets        |             156 |           158 |          9 |       6 |
 
 #### Raspberry Pi 4B (4G RAM)
 
@@ -84,12 +84,12 @@ Compared to the Raspberry Pi 2B above, it needs approximately only 30 - 40 % of 
 computing time. Due to full processing load the temperature raised up to 85°C at the CPU
 and the GPU with passive cooling only. A small simple fan reduced it to approx. 50°C.
 
-#### Odroid N2Plus (4G RAM)
+#### Raspberry Pi 2B (1G RAM)
 
-|                        |   median (secs) |   mean (secs) |   ± (secs) |   #runs |
-|:-----------------------|----------------:|--------------:|-----------:|--------:|
-| single sheet (2 pages) |              18 |            17 |          1 |      17 |
-| multiple sheets        |             156 |           158 |          9 |       6 |
+|                          |   median (secs) |   mean (secs) |   ± (secs) |   #runs |
+|:-------------------------|----------------:|--------------:|-----------:|--------:|
+| single sheet (2 pages)   |             599 |           625 |        154 |       9 |
+| multiple sheets          |            1075 |          1076 |         18 |       6 |
 
 ## Makes Use of
 
