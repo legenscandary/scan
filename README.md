@@ -66,14 +66,14 @@ on top, so that the outcome is again a PDF of the same content.
 individual documents (no command sheet), hence resulting in 2 pages per PDF
 (no blank pages included).
 
-### Raspberry Pi 2B (1G RAM)
+#### Raspberry Pi 2B (1G RAM)
 
 |                          |   median (secs) |   mean (secs) |   ± (secs) |   #runs |
 |:-------------------------|----------------:|--------------:|-----------:|--------:|
 | single sheet (2 pages)   |             599 |           625 |        154 |       9 |
 | multiple sheets          |            1075 |          1076 |         18 |       6 |
 
-### Raspberry Pi 4B (4G RAM)
+#### Raspberry Pi 4B (4G RAM)
 
 |                        |   median (secs) |   mean (secs) |   ± (secs) |   #runs |
 |:-----------------------|----------------:|--------------:|-----------:|--------:|
@@ -83,6 +83,13 @@ individual documents (no command sheet), hence resulting in 2 pages per PDF
 Compared to the Raspberry Pi 2B above, it needs approximately only 30 - 40 % of the
 computing time. Due to full processing load the temperature raised up to 85°C at the CPU
 and the GPU with passive cooling only. A small simple fan reduced it to approx. 50°C.
+
+#### Odroid N2Plus (4G RAM)
+
+|                        |   median (secs) |   mean (secs) |   ± (secs) |   #runs |
+|:-----------------------|----------------:|--------------:|-----------:|--------:|
+| single sheet (2 pages) |              18 |            17 |          1 |      17 |
+| multiple sheets        |             156 |           158 |          9 |       6 |
 
 ## Makes Use of
 
