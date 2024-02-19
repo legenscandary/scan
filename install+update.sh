@@ -279,7 +279,7 @@ configSys()
     cat > "$tmpfn" <<EOF
 #!/bin/sh
 logger -t "scanbd: \$0" "Begin of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
-nice -n 10 $SCRIPT_DIR/scan.sh "\$SCANBD_DEVICE"
+$SCRIPT_DIR/scan.sh "\$SCANBD_DEVICE"
 logger -t "scanbd: \$0" "End   of \$SCANBD_ACTION for device \$SCANBD_DEVICE"
 EOF
     chmod 755 "$tmpfn"
