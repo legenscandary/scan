@@ -1,20 +1,20 @@
 # Legenscandary
 
-An automatic scan server software for scanners with document feeder.
+Turn your document scanner into a scan server that can scan multi-page documents
+and make them available on the network (PDFs in a Samba/Windows share)
+as automatically as possible, without manual input.
 It creates multi-page PDFs with selectable text (OCR) by just one button press.
 
-## Simple Use
+## tl;dr - Summary
 
-1. A stack of documents is processed after pressing the button on the scanner.
-2. Front and back of each sheet of paper is scanned and stored in a PDF file.
-3. OCR is employed to make the text searchable & selectable in the PDF.
-4. Empty pages are detected and removed during the process.
-5. Each resulting PDF file is named after the first date found in the document
+- A stack of documents is processed after pressing the button on the scanner.
+- Front and back of each sheet of paper is scanned and stored in a PDF file.
+- OCR is employed to make the text searchable & selectable in the PDF.
+- Empty pages are detected and removed during the process.
+- Each resulting PDF file is named after the first date found in the document
  along with the first few word encountered. 
-6. All generated PDF files and the scanned images are made easily accessible
+- All generated PDF files and the scanned images are made easily accessible
 in the local network on a samba share (Windows network share).
-
-## Advanced Use
 
 Special command sheets allow to switch between different modes of operation:
 
@@ -25,15 +25,28 @@ Special command sheets allow to switch between different modes of operation:
 - When another command sheet is encountered, a new PDF file is created
 to contain the next sequence of pages.
 
-### Generate command sheets
+## Detailed Instructions
 
-The required command sheets (piece of paper with a QR code on it) can be generated
-by the following command:
+After the successful installation, open the connected document scanner so that the scanner button lights up blue (in case of the iX500 Model). Then insert one or more sheets and press the blue button. The scanner should then scan all sheets one after the other, create PDFs including text recognition and store them on the network share with user name *legenscandary* and the random password that was displayed at the end of the installation script. Its address for connecting a Windows network drive would be  
+`\\<hostname or IP>\scans`.
 
-    ./scan.sh sheets
+Depending on the complexity of the pages (and the processing power), it takes 1-2 minutes for the PDFs to appear in the network share.
 
-They will be appear as PDF files on the network/samba share in a folder named
-`command-sheets` and need to be printed on paper, preferrably black and white.
+For multi-page documents (my main motivation to write the script), you need a printed *command sheet*. This is an A4 or A5 sheet with a QR code on it that changes the scan mode to multi-page. You place this sheet as the first sheet in front of the stack of sheets to be scanned in the document scanner and all subsequent scanned pages are combined into one PDF with a uniform page size - until the next command sheet is scanned. This tells the scan script where a multi-page document begins and the next one begins. Several multi-page documents in a stack of sheets therefore require several command sheets, which are placed between the groups of sheets.
+
+You can generate these command sheets by calling the scan script with the argument *sheets*, preferably as user *legenscandary*, otherwise the correct folder will probably not be found or the permissions for writing the files are not sufficient. Run it like this, for example:
+
+    sudo -u legenscandary /etc/scanbd/scripts/scan.sh sheets
+
+This should create two QR command sheets in the network share, in a new folder with a time stamp (`multi.pdf` for multi-page documents and `single.pdf` for single, two-page sheets). Print these out accordingly, preferrably plain black and white, and place them in front of or in between a stack of sheets to be scanned as described above. The corresponding PDFs with text recognition should then be generated without any further action needed during scanning. 
+
+## Troubleshooting
+
+If scanning by button press does not start, the first thing I would do is to check if the scan button press is registered by the `scanbd.service`. This service should register the button presses and log some messages in the journal. They can be monitored with the command
+
+    sudo journalctl -u scanbd.service -f
+
+For additional debugging, there are log files created in the subfolder `work` on the network share for each scan and document processing in the subsequent subfolders `scan` and `doc` along with the intermediated scanned raw images and processed images.
 
 ## Supported Scanners
 
